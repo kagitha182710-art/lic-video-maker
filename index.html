@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Video Maker - 9959041086 Fix</title>
+    <title>LIC Video Maker - Final Setup</title>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #f0f2f5; padding: 10px; }
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; padding: 10px; }
         .container { max-width: 450px; margin: auto; background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
         canvas { border: 4px solid #004aad; border-radius: 10px; background: #000; width: 100%; height: auto; }
         .status-box { padding: 10px; margin-bottom: 10px; border-radius: 5px; font-weight: bold; font-size: 14px; }
@@ -21,7 +21,7 @@
 <body>
 
 <div class="container">
-    <div id="status" class="status-box">లోడ్ అవుతోంది...</div>
+    <div id="status" class="status-box">డేటా వెతుకుతున్నాము...</div>
     <canvas id="canvas"></canvas>
     <div style="margin-top:15px;">
         <button id="startBtn" disabled>▶ రికార్డింగ్ ప్రారంభించండి</button>
@@ -31,7 +31,7 @@
     </div>
 </div>
 
-<video id="vPlayer" style="display:none;" crossorigin="anonymous" playsinline muted></video>
+<video id="vPlayer" style="display:none;" crossorigin="anonymous" playsinline></video>
 
 <script>
     const v = document.getElementById('vPlayer');
@@ -60,9 +60,10 @@
             const text = await r.text();
             const rows = text.split("\n");
             
-            for (let i = 1; i < rows.length; i++) {
+            for (let i = 0; i < rows.length; i++) {
                 let cols = rows[i].split(",");
-                if (cols[0] && cols[0].replace(/\D/g,'') === agentMobile) {
+                // మొబైల్ నంబర్ మ్యాచ్ అయితే (Trim వాడుతున్నాం కాబట్టి ఎర్రర్ రాదు)
+                if (cols[0] && cols[0].trim().includes(agentMobile)) {
                     watermark.crossOrigin = "anonymous";
                     watermark.src = cols[1]?.trim();
                     outroSrc = cols[2]?.trim();
@@ -70,12 +71,18 @@
                 }
             }
 
-            watermark.onload = () => {
-                status.className = "status-box success";
-                status.innerText = "ఏజెంట్ వివరాలు సిద్ధం! రికార్డ్ చేయండి.";
-                startBtn.disabled = false;
-                v.src = mainSrc;
-            };
+            if (watermark.src && outroSrc) {
+                watermark.onload = () => {
+                    status.className = "status-box success";
+                    status.innerText = "9959041086 వివరాలు సిద్ధంగా ఉన్నాయి!";
+                    startBtn.disabled = false;
+                    v.src = mainSrc;
+                    v.load();
+                };
+            } else {
+                status.className = "status-box error";
+                status.innerText = "షీట్‌లో డేటా సరిగ్గా లేదు!";
+            }
         } catch (e) {
             status.className = "status-box error";
             status.innerText = "డేటా లోడ్ కాలేదు!";
@@ -122,7 +129,7 @@
         recorder.onstop = () => {
             const blob = new Blob(chunks, { type: 'video/webm' });
             downloadBtn.href = URL.createObjectURL(blob);
-            downloadBtn.download = "LIC_Video.webm";
+            downloadBtn.download = "Final_Video.webm";
             downloadBtn.style.display = "inline-block";
         };
         recorder.start();
@@ -135,10 +142,7 @@
             isOutro = true;
             isScrolling = false;
             v.src = outroSrc;
-            v.play().catch(err => {
-                alert("రెండో వీడియో లోడ్ కాలేదు! లింక్ చెక్ చేయండి.");
-                stopBtn.click();
-            });
+            v.play().catch(() => stopBtn.click());
         } else {
             stopBtn.click();
         }
