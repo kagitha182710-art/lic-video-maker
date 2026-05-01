@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Video Editor - Banner Version</title>
+    <title>Fast Render LIC Video Editor</title>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; margin-top: 20px; background-color: #f4f4f9;}
         canvas { border: 2px solid #333; border-radius: 8px; margin-top: 15px; background-color: #000; max-width: 100%; max-height: 60vh; object-fit: contain;}
@@ -15,19 +15,19 @@
 </head>
 <body>
 
-    <h2>LIC వీడియో ఎడిటర్</h2>
+    <h2>LIC వీడియో ఎడిటర్ (Fast Rendering)</h2>
     
     <div style="margin-bottom: 15px;">
-        <label><b>మీ బ్యానర్/విజిటింగ్ కార్డ్ అప్లోడ్ చేయండి: </b></label>
+        <label><b>బ్యానర్/విజిటింగ్ కార్డ్ అప్లోడ్ చేయండి: </b></label>
         <input type="file" id="imageUpload" accept="image/*" />
     </div>
 
     <canvas id="canvas"></canvas><br>
 
     <div class="controls">
-        <button id="startBtn">▶ ప్లే & రికార్డింగ్ స్టార్ట్</button>
-        <button id="stopBtn" disabled>⏹ రికార్డింగ్ స్టాప్</button>
-        <button id="downloadBtn">📥 వీడియో డౌన్‌లోడ్ చేయండి</button>
+        <button id="startBtn">▶ స్టార్ట్ & రికార్డ్</button>
+        <button id="stopBtn" disabled>⏹ రికార్డింగ్ ఆపు</button>
+        <button id="downloadBtn">📥 వీడియో డౌన్లోడ్</button>
     </div>
 
     <video id="video" src="video.mp4" style="display: none;" crossorigin="anonymous"></video>
@@ -35,7 +35,7 @@
     <script>
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { alpha: false }); // పర్ఫార్మెన్స్ కోసం ఆల్ఫా ఫాల్స్
         const startBtn = document.getElementById('startBtn');
         const stopBtn = document.getElementById('stopBtn');
         const downloadBtn = document.getElementById('downloadBtn');
@@ -46,6 +46,7 @@
         let watermarkScrollY = 0;
         let isScrolling = false;
         let finalVideoUrl = null;
+        let animationId;
 
         document.getElementById('imageUpload').addEventListener('change', function(e) {
             const file = e.target.files[0];
@@ -55,6 +56,7 @@
                     watermarkImage.src = event.target.result;
                     watermarkImage.onload = () => {
                         watermarkScrollY = canvas.height;
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                     };
                 };
                 reader.readAsDataURL(file);
@@ -67,9 +69,15 @@
             watermarkScrollY = canvas.height;
         });
 
-        function drawWatermark() {
+        function draw() {
+            if (video.paused || video.ended) {
+                cancelAnimationFrame(animationId);
+                return;
+            }
+            
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
             if (watermarkImage.src) {
-                // ఇమేజ్ వెడల్పును వీడియో వెడల్పులో 98% కి పెంచాను (పెద్దగా కనిపించడానికి)
                 let wWidth = canvas.width * 0.98; 
                 let wHeight = (watermarkImage.height / watermarkImage.width) * wWidth;
                 let xPos = (canvas.width - wWidth) / 2;
@@ -77,19 +85,13 @@
                 ctx.drawImage(watermarkImage, xPos, watermarkScrollY, wWidth, wHeight);
                 
                 if (isScrolling) {
-                    watermarkScrollY -= 1.8; // స్క్రోలింగ్ వేగం
+                    watermarkScrollY -= 2.5; // వేగంగా స్క్రోల్ అవ్వడానికి
                     if (watermarkScrollY + wHeight < 0) {
                         watermarkScrollY = canvas.height;
                     }
                 }
             }
-        }
-
-        function draw() {
-            if (video.paused || video.ended) return;
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            drawWatermark();
-            requestAnimationFrame(draw);
+            animationId = requestAnimationFrame(draw);
         }
 
         startBtn.addEventListener('click', () => {
@@ -106,14 +108,21 @@
             video.play();
             draw();
 
-            const canvasStream = canvas.captureStream(30);
+            // వేగంగా రికార్డ్ అవ్వడానికి స్ట్రీమ్ సెట్టింగ్స్
+            const canvasStream = canvas.captureStream(30); 
             let videoStream = video.captureStream ? video.captureStream() : video.mozCaptureStream();
 
             if (videoStream && videoStream.getAudioTracks().length > 0) {
                 canvasStream.addTrack(videoStream.getAudioTracks()[0]);
             }
 
-            mediaRecorder = new MediaRecorder(canvasStream, { mimeType: 'video/webm' });
+            // High Bitrate ఇచ్చాను - దీనివల్ల ప్రాసెసింగ్ వేగంగా మరియు క్వాలిటీగా ఉంటుంది
+            const options = { 
+                mimeType: 'video/webm;codecs=vp8',
+                videoBitsPerSecond: 5000000 // 5Mbps
+            };
+
+            mediaRecorder = new MediaRecorder(canvasStream, options);
             mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
             
             mediaRecorder.onstop = () => {
@@ -139,10 +148,8 @@
             if (finalVideoUrl) {
                 const a = document.createElement('a');
                 a.href = finalVideoUrl;
-                a.download = 'lic-video.webm';
-                document.body.appendChild(a);
+                a.download = 'lic_fast_video.webm';
                 a.click();
-                document.body.removeChild(a);
             }
         });
 
