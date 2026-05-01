@@ -3,22 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manual Download Video Editor</title>
+    <title>LIC Video Editor - Final Version</title>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; margin-top: 20px; background-color: #f4f4f9;}
         canvas { border: 2px solid #333; border-radius: 8px; margin-top: 15px; background-color: #000; max-width: 100%; max-height: 60vh; object-fit: contain;}
         .controls { margin-top: 20px; }
-        button { padding: 10px 15px; margin: 5px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; font-size: 16px;}
+        button { padding: 12px 20px; margin: 5px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; font-size: 16px; font-weight: bold;}
         button:disabled { background: #ccc; cursor: not-allowed; }
-        #downloadBtn { background: #28a745; display: none; } /* డౌన్‌లోడ్ బటన్ గ్రీన్ కలర్ లో ఉంటుంది */
+        #downloadBtn { background: #28a745; display: none; } /* డౌన్‌లోడ్ బటన్ మొదట కనిపించదు */
     </style>
 </head>
 <body>
 
-    <h2>LIC వీడియో ఎడిటర్ - మాన్యువల్ డౌన్‌లోడ్</h2>
+    <h2>LIC వీడియో ఎడిటర్</h2>
     
     <div style="margin-bottom: 15px;">
-        <label><b>వాటర్ మార్క్ ఇమేజ్ అప్లోడ్ చేయండి: </b></label>
+        <label><b>మీ బ్యానర్/విజిటింగ్ కార్డ్ అప్లోడ్ చేయండి: </b></label>
         <input type="file" id="imageUpload" accept="image/*" />
     </div>
 
@@ -30,6 +30,7 @@
         <button id="downloadBtn">📥 వీడియో డౌన్‌లోడ్ చేయండి</button>
     </div>
 
+    <!-- వీడియో ఫైల్ పేరు కచ్చితంగా video.mp4 అని ఉండాలి -->
     <video id="video" src="video.mp4" style="display: none;" crossorigin="anonymous"></video>
 
     <script>
@@ -45,7 +46,7 @@
         let recordedChunks = [];
         let watermarkScrollY = 0;
         let isScrolling = false;
-        let finalVideoBlob = null;
+        let finalVideoUrl = null;
 
         document.getElementById('imageUpload').addEventListener('change', function(e) {
             const file = e.target.files[0];
@@ -69,14 +70,15 @@
 
         function drawWatermark() {
             if (watermarkImage.src) {
-                let wWidth = canvas.width * 0.35; 
+                // ఇమేజ్ రేషియో పాడవకుండా వీడియో వెడల్పులో 95% ఉండేలా సెట్ చేయడం
+                let wWidth = canvas.width * 0.95; 
                 let wHeight = (watermarkImage.height / watermarkImage.width) * wWidth;
-                let xPos = canvas.width - wWidth - 20;
+                let xPos = (canvas.width - wWidth) / 2; // సెంటర్ లో ఉండటానికి
 
                 ctx.drawImage(watermarkImage, xPos, watermarkScrollY, wWidth, wHeight);
                 
                 if (isScrolling) {
-                    watermarkScrollY -= 1.8; 
+                    watermarkScrollY -= 1.8; // స్క్రోలింగ్ స్పీడ్
                     if (watermarkScrollY + wHeight < 0) {
                         watermarkScrollY = canvas.height;
                     }
@@ -93,12 +95,12 @@
 
         startBtn.addEventListener('click', () => {
             if (!watermarkImage.src) {
-                alert("ముందుగా వాటర్ మార్క్ ఇమేజ్ సెలెక్ట్ చేయండి!");
+                alert("ముందుగా ఇమేజ్ సెలెక్ట్ చేయండి!");
                 return;
             }
-            // కొత్త రికార్డింగ్ కోసం పాత డేటాను క్లియర్ చేయడం
             recordedChunks = [];
-            finalVideoBlob = null;
+            if (finalVideoUrl) URL.revokeObjectURL(finalVideoUrl);
+            finalVideoUrl = null;
             downloadBtn.style.display = "none";
             
             isScrolling = true;
@@ -116,8 +118,9 @@
             mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
             
             mediaRecorder.onstop = () => {
-                finalVideoBlob = new Blob(recordedChunks, { type: 'video/webm' });
-                downloadBtn.style.display = "inline-block"; // రికార్డింగ్ ఆగాక డౌన్‌లోడ్ బటన్ కనిపిస్తుంది
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                finalVideoUrl = URL.createObjectURL(blob);
+                downloadBtn.style.display = "inline-block"; // రికార్డింగ్ ఆగాక బటన్ వస్తుంది కానీ ఆటోమేటిక్ డౌన్‌లోడ్ అవ్వదు
             };
 
             mediaRecorder.start();
@@ -133,15 +136,15 @@
             stopBtn.disabled = true;
         });
 
-        // యూజర్ బటన్ నొక్కినప్పుడు మాత్రమే డౌన్‌లోడ్ అవుతుంది
+        // కేవలం యూజర్ బటన్ నొక్కితేనే డౌన్‌లోడ్ అవుతుంది
         downloadBtn.addEventListener('click', () => {
-            if (finalVideoBlob) {
-                const url = URL.createObjectURL(finalVideoBlob);
+            if (finalVideoUrl) {
                 const a = document.createElement('a');
-                a.href = url;
-                a.download = 'lic-custom-video.webm';
+                a.href = finalVideoUrl;
+                a.download = 'lic-video.webm';
+                document.body.appendChild(a);
                 a.click();
-                URL.revokeObjectURL(url);
+                document.body.removeChild(a);
             }
         });
 
