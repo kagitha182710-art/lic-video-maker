@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Pro Editor - First Frame Fixed</title>
+    <title>LIC Pro Editor - Button Fix</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; padding: 10px; }
         .container { max-width: 450px; margin: auto; background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
@@ -11,6 +11,7 @@
         .status-box { padding: 10px; margin-bottom: 10px; border-radius: 5px; font-weight: bold; font-size: 14px; }
         .success { background: #d4edda; color: #155724; }
         .loading { background: #fff3cd; color: #856404; }
+        .recording { background: #ffeeba; color: #d39e00; }
         button { padding: 12px 24px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin: 5px; }
         #startBtn { background: #004aad; color: #fff; }
         #stopBtn { background: #d93025; color: #fff; }
@@ -21,7 +22,7 @@
 <body>
 
 <div class="container">
-    <div id="status" class="status-box loading">ఇమేజ్‌లు మరియు వీడియో లోడ్ అవుతున్నాయి...</div>
+    <div id="status" class="status-box loading">డేటా లోడ్ అవుతోంది...</div>
     <canvas id="canvas"></canvas>
     <div style="margin-top:15px;">
         <button id="startBtn" disabled>▶ రికార్డింగ్ ప్రారంభించండి</button>
@@ -88,24 +89,26 @@
             await Promise.all(loadPromises);
 
             status.className = "status-box success";
-            status.innerText = "రెండు బ్యానర్లు పక్కాగా సిద్ధం! రికార్డింగ్ చేయండి.";
+            status.innerText = "రెడీ! రికార్డింగ్ ప్రారంభించండి.";
             startBtn.disabled = false;
             
+            // వీడియో ముందే లోడ్ చేసి పెట్టుకుంటున్నాం
             v.src = mainSrc;
-            v.load(); // Video munde load avvadaniki
+            v.load(); 
             
-        } catch (e) { status.innerText = "డేటా ఎర్రర్!"; }
+        } catch (e) { 
+            status.innerText = "డేటా లోడ్ ఎర్రర్!"; 
+            console.error(e);
+        }
     }
 
     loadData();
 
-    // Black screen badulu first frame munde draw cheyadaniki
+    // మొదటి ఫ్రేమ్ డ్రా చేయడం
     v.onloadeddata = () => {
         canvas.width = v.videoWidth;
         canvas.height = v.videoHeight;
-        
         ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
-        
         let w = canvas.width;
         if (fixedImg.src) {
             let fH = (fixedImg.height / fixedImg.width) * w;
@@ -123,10 +126,7 @@
             ctx.globalAlpha = 0.15; 
             let sH = (scrollImg.height / scrollImg.width) * w;
             ctx.drawImage(scrollImg, 0, scrollY, w, sH);
-            
-            if (scrollY + sH > -50) { 
-                scrollY -= 0.8; 
-            }
+            if (scrollY + sH > -50) { scrollY -= 0.8; }
             ctx.restore();
         }
 
@@ -142,47 +142,65 @@
         requestAnimationFrame(draw);
     });
 
+    // రికార్డింగ్ బటన్ క్లిక్ లాజిక్
     startBtn.onclick = async () => {
-        if (!audioCtx) {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            dest = audioCtx.createMediaStreamDestination();
-            source = audioCtx.createMediaElementSource(v);
-            source.connect(dest);
-            source.connect(audioCtx.destination);
+        try {
+            startBtn.disabled = true;
+            status.className = "status-box recording";
+            status.innerText = "రికార్డింగ్ అవుతోంది... (ఆపకండి)";
+
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                dest = audioCtx.createMediaStreamDestination();
+                source = audioCtx.createMediaElementSource(v);
+                source.connect(dest);
+                source.connect(audioCtx.destination);
+            }
+            if (audioCtx.state === 'suspended') {
+                await audioCtx.resume();
+            }
+
+            chunks = []; 
+            scrollY = canvas.height - 100; 
+            isScrolling = true;
+            isOutro = false;
+            
+            // ఇక్కడే తప్పు జరిగింది: v.src మళ్ళీ ఇవ్వకుండా, కేవలం టైమ్ 0 చేసి ప్లే చేస్తున్నాం
+            v.currentTime = 0; 
+            await v.play(); // ప్లే అయ్యేవరకు వేచి ఉండాలి
+
+            const canvasStream = canvas.captureStream(30);
+            const combinedStream = new MediaStream([
+                ...canvasStream.getVideoTracks(),
+                ...dest.stream.getAudioTracks()
+            ]);
+
+            recorder = new MediaRecorder(combinedStream, { 
+                mimeType: 'video/webm;codecs=vp8,opus', 
+                videoBitsPerSecond: 1500000 
+            });
+
+            recorder.ondataavailable = e => { if(e.data.size > 0) chunks.push(e.data); };
+            recorder.onstop = () => {
+                const blob = new Blob(chunks, { type: 'video/webm' });
+                downloadBtn.href = URL.createObjectURL(blob);
+                downloadBtn.download = "LIC_Agent_Final_Output.webm";
+                downloadBtn.style.display = "inline-block";
+                status.className = "status-box success";
+                status.innerText = "రికార్డింగ్ పూర్తయింది! వీడియో డౌన్‌లోడ్ చేసుకోండి.";
+            };
+
+            recorder.start();
+            stopBtn.disabled = false;
+
+        } catch (error) {
+            // ఒకవేళ ఏమైనా తప్పు జరిగితే మీకు కచ్చితంగా అలర్ట్ చూపిస్తుంది
+            alert("రికార్డింగ్ ఫెయిల్ అయింది! కారణం: " + error.message);
+            console.error("Error details:", error);
+            startBtn.disabled = false;
+            status.className = "status-box error";
+            status.innerText = "మళ్లీ ప్రయత్నించండి.";
         }
-        if (audioCtx.state === 'suspended') {
-            await audioCtx.resume();
-        }
-
-        chunks = []; 
-        scrollY = canvas.height - 100; 
-        isScrolling = true;
-        isOutro = false;
-        
-        v.src = mainSrc;
-        v.play();
-
-        const canvasStream = canvas.captureStream(30);
-        const combinedStream = new MediaStream([
-            ...canvasStream.getVideoTracks(),
-            ...dest.stream.getAudioTracks()
-        ]);
-
-        recorder = new MediaRecorder(combinedStream, { 
-            mimeType: 'video/webm;codecs=vp8,opus', 
-            videoBitsPerSecond: 1500000 
-        });
-
-        recorder.ondataavailable = e => { if(e.data.size > 0) chunks.push(e.data); };
-        recorder.onstop = () => {
-            const blob = new Blob(chunks, { type: 'video/webm' });
-            downloadBtn.href = URL.createObjectURL(blob);
-            downloadBtn.download = "LIC_Agent_Final_Output.webm";
-            downloadBtn.style.display = "inline-block";
-        };
-
-        recorder.start();
-        startBtn.disabled = true; stopBtn.disabled = false;
     };
 
     v.onended = () => {
