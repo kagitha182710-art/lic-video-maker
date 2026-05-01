@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Video Maker - Advanced Watermark</title>
+    <title>LIC Video Maker - Premium Version</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; padding: 10px; -webkit-user-select: none; user-select: none; }
         .container { max-width: 450px; margin: auto; background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
-        canvas { border: 2px solid #ccc; border-radius: 10px; background: #000; width: 100%; height: auto; display: block; margin: auto; }
+        canvas { border: 2px solid #ccc; border-radius: 10px; background: #fff; width: 100%; height: auto; display: block; margin: auto; }
         .status-box { padding: 10px; margin-bottom: 10px; border-radius: 5px; font-weight: bold; font-size: 14px; }
         .success { background: #d4edda; color: #155724; }
         .loading { background: #fff3cd; color: #856404; }
@@ -22,7 +22,7 @@
 <body oncontextmenu="return false;">
 
 <div class="container">
-    <div id="status" class="status-box loading">సెక్యూర్ వాటర్‌మార్క్ లోడ్ అవుతోంది...</div>
+    <div id="status" class="status-box loading">ప్రీమియం ఫీచర్స్ లోడ్ అవుతున్నాయి...</div>
     <canvas id="canvas"></canvas>
     <div style="margin-top:15px;">
         <button id="startBtn" disabled>▶ రికార్డింగ్ ప్రారంభించండి</button>
@@ -47,13 +47,9 @@
     let borderImg = new Image();
     let recorder, chunks = [];
     
-    // ఏజెంట్ వివరాలు
     let waterName = "";
     let agentMob = "";
-    
-    // వాటర్‌మార్క్ పొజిషన్స్
-    let nameX = 50, nameY = 50;
-    let mobX = 100, mobY = 150;
+    let nameX = 50, nameY = 80, mobX = 100, mobY = 200;
     let lastUpdate = 0;
 
     let mainSrc = "https://kagitha182710-art.github.io/lic-video-maker/today.mp4?v=" + Date.now();
@@ -75,7 +71,6 @@
             for (let i = 0; i < rows.length; i++) {
                 let cols = rows[i].split(",");
                 if (cols[0] && cols[0].trim().includes(agentMobile)) {
-                    // Column A - Mobile, Column E (Index 4) - Water name
                     agentMob = cols[0]?.trim(); 
                     waterName = cols[4]?.trim() || ""; 
                     fSrc = cols[1]?.trim(); 
@@ -86,7 +81,10 @@
 
             let loadPromises = [];
             loadPromises.push(new Promise(res => { borderImg.onload = res; borderImg.src = borderSrc; }));
-            if (fSrc) loadPromises.push(new Promise(res => { fixedImg.crossOrigin="anonymous"; fixedImg.onload = res; fixedImg.src = fSrc; }));
+            if (fSrc) {
+                fixedImg.crossOrigin = "anonymous";
+                loadPromises.push(new Promise(res => { fixedImg.onload = res; fixedImg.src = fSrc; }));
+            }
 
             await Promise.all(loadPromises);
             v.src = mainSrc;
@@ -96,12 +94,15 @@
 
     loadData();
 
-    v.onloadeddata = () => {
+    v.onloadedmetadata = () => {
         canvas.width = v.videoWidth;
         canvas.height = v.videoHeight;
-        render();
+    };
+
+    v.onloadeddata = () => {
+        render(); // వీడియో లోడ్ అవ్వగానే మొదటి ఫ్రేమ్ గీస్తుంది
         status.className = "status-box success";
-        status.innerText = "అడ్వాన్స్‌డ్ సెక్యూరిటీ ఆన్!";
+        status.innerText = "ప్రీమియం వాటర్ మార్క్స్ రెడీ!";
         startBtn.disabled = false;
     };
 
@@ -109,42 +110,51 @@
         let w = canvas.width;
         let h = canvas.height;
 
-        ctx.drawImage(v, 0, 0, w, h);
+        // 1. మెయిన్ వీడియో లేదా వైట్ బ్యాగ్రౌండ్ (లోడ్ అయ్యే వరకు)
+        if (v.readyState >= 2) {
+            ctx.drawImage(v, 0, 0, w, h);
+        } else {
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, w, h);
+        }
 
-        // --- రాండమ్ వాటర్‌మార్క్ లాజిక్ ---
+        // --- ఐకాన్స్‌తో కూడిన రాండమ్ వాటర్ మార్క్స్ ---
         if (!v.paused && !v.ended) {
             let now = Date.now();
-            if (now - lastUpdate > 4000) { // ప్రతి 4 సెకన్లకు పొజిషన్ మారుతుంది
-                // పేరు కోసం రాండమ్ పొజిషన్ (స్క్రీన్ బయటకు వెళ్లకుండా)
-                nameX = Math.random() * (w - 180) + 20;
-                nameY = Math.random() * (h/2 - 50) + 50; // స్క్రీన్ పై సగంలో పేరు
-                
-                // మొబైల్ నంబర్ కోసం వేరే రాండమ్ పొజిషన్
-                mobX = Math.random() * (w - 150) + 20;
-                mobY = Math.random() * (h/2 - 50) + (h/2); // స్క్రీన్ కింద సగంలో నంబర్
-                
+            if (now - lastUpdate > 4000) { 
+                nameX = Math.random() * (w - 200) + 30;
+                nameY = Math.random() * (h/2 - 100) + 100;
+                mobX = Math.random() * (w - 200) + 30;
+                mobY = Math.random() * (h/2 - 100) + (h/2);
                 lastUpdate = now;
             }
             
             ctx.save();
-            ctx.globalAlpha = 0.35; // మసక రంగు
-            ctx.fillStyle = "white";
-            ctx.shadowBlur = 3;
+            ctx.globalAlpha = 0.5; // థిక్ గా కనిపించడానికి పెంచాను
+            ctx.shadowBlur = 4;
             ctx.shadowColor = "black";
             
-            // పేరు డిస్ప్లే (బోల్డ్ గా)
-            ctx.font = "bold 20px Segoe UI";
-            if(waterName) ctx.fillText(waterName, nameX, nameY);
+            // యూజర్ ఐకాన్ + పేరు (Bold)
+            ctx.font = "bold 24px Segoe UI";
+            ctx.fillStyle = "#FFD700"; // గోల్డ్ కలర్ ఐకాన్ కోసం
+            if(waterName) {
+                ctx.fillText("👤", nameX - 30, nameY); // ఐకాన్
+                ctx.fillStyle = "white";
+                ctx.fillText(waterName, nameX, nameY); 
+            }
             
-            // మొబైల్ నంబర్ డిస్ప్లే
-            ctx.font = "18px Segoe UI";
+            // మొబైల్ ఐకాన్ + నంబర్ (Bold)
+            ctx.font = "bold 22px Segoe UI";
+            ctx.fillStyle = "#25D366"; // వాట్సాప్ గ్రీన్ కలర్ ఐకాన్ కోసం
+            ctx.fillText("📞", mobX - 30, mobY); // ఐకాన్
+            ctx.fillStyle = "white";
             ctx.fillText(agentMob, mobX, mobY);
             
             ctx.restore();
         }
 
-        // ఫిక్స్‌డ్ బ్యానర్ (కింద)
-        if (fixedImg.src) {
+        // 3. కింద ఫిక్స్‌డ్ బ్యానర్ (ముందే కనిపిస్తుంది)
+        if (fixedImg.complete) {
             let targetWidth = w * 0.95; 
             let fH = ((fixedImg.height / fixedImg.width) * targetWidth) * 0.85; 
             let xOffset = (w - targetWidth) / 2; 
@@ -152,7 +162,7 @@
             ctx.drawImage(fixedImg, xOffset, h - fH - yOffset, targetWidth, fH);
         }
 
-        // బోర్డర్ (అందరికంటే పైన)
+        // 4. బోర్డర్
         if (borderImg.complete) {
             ctx.drawImage(borderImg, 0, 0, w, h);
         }
@@ -170,7 +180,7 @@
         try {
             startBtn.disabled = true;
             status.className = "status-box recording";
-            status.innerText = "సెక్యూర్ వీడియో తయారవుతోంది...";
+            status.innerText = "వీడియో తయారవుతోంది...";
 
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -194,9 +204,9 @@
             recorder.onstop = () => {
                 const blob = new Blob(chunks, { type: 'video/webm' });
                 downloadBtn.href = URL.createObjectURL(blob);
-                downloadBtn.download = "LIC_Watermarked_Video.webm";
+                downloadBtn.download = "LIC_Premium_Video.webm";
                 downloadBtn.style.display = "inline-block";
-                status.innerText = "డౌన్‌లోడ్ సిద్ధం!";
+                status.innerText = "డౌన్‌లోడ్ చేసుకోండి!";
             };
             recorder.start();
             stopBtn.disabled = false;
