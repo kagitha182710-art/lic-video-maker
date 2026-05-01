@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="te">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Watermark Editor</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin-top: 20px; background-color: #f4f4f9;}
+        canvas { border: 2px solid #333; border-radius: 8px; margin-top: 15px; background-color: #000; max-width: 100%; max-height: 60vh; object-fit: contain;}
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; font-size: 16px;}
+        button:disabled { background: #ccc; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+    <h2>వెబ్ వీడియో ఎడిటర్</h2>
+    
+    <label><b>వాటర్ మార్క్ ఇమేజ్ అప్లోడ్ చేయండి: </b></label>
+    <input type="file" id="imageUpload" accept="image/*" /><br>
+
+    <canvas id="canvas"></canvas><br>
+
+    <button id="startBtn">▶ ప్లే & రికార్డింగ్</button>
+    <button id="stopBtn" disabled>⏹ డౌన్‌లోడ్</button>
+
+    <!-- ఇక్కడ మీ వీడియో పేరు 'video.mp4' అని ఉండాలి -->
+    <video id="video" src="video.mp4" style="display: none;" crossorigin="anonymous"></video>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+
+        let watermarkImage = new Image();
+        let mediaRecorder;
+        let recordedChunks = [];
+
+        document.getElementById('imageUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => watermarkImage.src = event.target.result;
+                reader.readAsDataURL(file);
+            }
+        });
+
+        video.addEventListener('loadedmetadata', function() {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+        });
+
+        function draw() {
+            if (video.paused || video.ended) return;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            if (watermarkImage.src) {
+                let size = canvas.width * 0.15; 
+                if(size < 60) size = 60; if(size > 150) size = 150;
+                ctx.globalAlpha = 0.8; 
+                ctx.drawImage(watermarkImage, canvas.width - size - 20, canvas.height - size - 20, size, size); 
+                ctx.globalAlpha = 1.0; 
+            }
+            requestAnimationFrame(draw);
+        }
+
+        startBtn.addEventListener('click', () => {
+            video.play();
+            draw(); 
+            const canvasStream = canvas.captureStream(30); 
+            let videoStream;
+            if (video.captureStream) videoStream = video.captureStream();
+            else if (video.mozCaptureStream) videoStream = video.mozCaptureStream();
+
+            if (videoStream && videoStream.getAudioTracks().length > 0) {
+                canvasStream.addTrack(videoStream.getAudioTracks()[0]);
+            }
+
+            mediaRecorder = new MediaRecorder(canvasStream, { mimeType: 'video/webm' });
+            recordedChunks = [];
+            mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+            mediaRecorder.start();
+            
+            startBtn.disabled = true; stopBtn.disabled = false;
+        });
+
+        stopBtn.addEventListener('click', () => {
+            video.pause(); mediaRecorder.stop();
+            startBtn.disabled = false; stopBtn.disabled = true;
+
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = 'edited-video.webm'; a.click();
+            };
+        });
+
+        video.addEventListener('ended', () => { if(!stopBtn.disabled) stopBtn.click(); });
+    </script>
+</body>
+</html>
