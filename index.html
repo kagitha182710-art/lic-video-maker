@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Pro Editor - Button Fix</title>
+    <title>LIC Pro Editor - News Video Fixed</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; padding: 10px; }
         .container { max-width: 450px; margin: auto; background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
@@ -12,6 +12,7 @@
         .success { background: #d4edda; color: #155724; }
         .loading { background: #fff3cd; color: #856404; }
         .recording { background: #ffeeba; color: #d39e00; }
+        .error { background: #f8d7da; color: #721c24; }
         button { padding: 12px 24px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin: 5px; }
         #startBtn { background: #004aad; color: #fff; }
         #stopBtn { background: #d93025; color: #fff; }
@@ -46,7 +47,10 @@
     let fixedImg = new Image();
     let scrollImg = new Image();
     let recorder, chunks = [], scrollY = 0;
-    let mainSrc = "video.mp4", outroSrc = "";
+    
+    // ఇక్కడ మీరు అడిగినట్లుగా news.mp4 అని మార్చాను
+    let mainSrc = "news.mp4", outroSrc = "";
+    
     let isOutro = false, audioCtx, dest, source;
     let isScrolling = false;
 
@@ -97,6 +101,7 @@
             v.load(); 
             
         } catch (e) { 
+            status.className = "status-box error";
             status.innerText = "డేటా లోడ్ ఎర్రర్!"; 
             console.error(e);
         }
@@ -142,7 +147,6 @@
         requestAnimationFrame(draw);
     });
 
-    // రికార్డింగ్ బటన్ క్లిక్ లాజిక్
     startBtn.onclick = async () => {
         try {
             startBtn.disabled = true;
@@ -165,9 +169,8 @@
             isScrolling = true;
             isOutro = false;
             
-            // ఇక్కడే తప్పు జరిగింది: v.src మళ్ళీ ఇవ్వకుండా, కేవలం టైమ్ 0 చేసి ప్లే చేస్తున్నాం
             v.currentTime = 0; 
-            await v.play(); // ప్లే అయ్యేవరకు వేచి ఉండాలి
+            await v.play(); 
 
             const canvasStream = canvas.captureStream(30);
             const combinedStream = new MediaStream([
@@ -184,7 +187,7 @@
             recorder.onstop = () => {
                 const blob = new Blob(chunks, { type: 'video/webm' });
                 downloadBtn.href = URL.createObjectURL(blob);
-                downloadBtn.download = "LIC_Agent_Final_Output.webm";
+                downloadBtn.download = "LIC_Agent_News_Output.webm";
                 downloadBtn.style.display = "inline-block";
                 status.className = "status-box success";
                 status.innerText = "రికార్డింగ్ పూర్తయింది! వీడియో డౌన్‌లోడ్ చేసుకోండి.";
@@ -194,7 +197,6 @@
             stopBtn.disabled = false;
 
         } catch (error) {
-            // ఒకవేళ ఏమైనా తప్పు జరిగితే మీకు కచ్చితంగా అలర్ట్ చూపిస్తుంది
             alert("రికార్డింగ్ ఫెయిల్ అయింది! కారణం: " + error.message);
             console.error("Error details:", error);
             startBtn.disabled = false;
