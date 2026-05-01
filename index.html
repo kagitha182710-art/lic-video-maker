@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fast Render LIC Video Editor</title>
+    <title>LIC Video Editor - Auto Login Version</title>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; margin-top: 20px; background-color: #f4f4f9;}
         canvas { border: 2px solid #333; border-radius: 8px; margin-top: 15px; background-color: #000; max-width: 100%; max-height: 60vh; object-fit: contain;}
@@ -11,31 +11,29 @@
         button { padding: 12px 20px; margin: 5px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; font-size: 16px; font-weight: bold;}
         button:disabled { background: #ccc; cursor: not-allowed; }
         #downloadBtn { background: #28a745; display: none; }
+        .user-info { color: #004aad; font-weight: bold; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
-    <h2>LIC వీడియో ఎడిటర్ (Fast Rendering)</h2>
-    
-    <div style="margin-bottom: 15px;">
-        <label><b>బ్యానర్/విజిటింగ్ కార్డ్ అప్లోడ్ చేయండి: </b></label>
-        <input type="file" id="imageUpload" accept="image/*" />
-    </div>
+    <h2>LIC వీడియో ఎడిటర్</h2>
+    <div id="userDisplay" class="user-info"></div>
 
     <canvas id="canvas"></canvas><br>
 
     <div class="controls">
-        <button id="startBtn">▶ స్టార్ట్ & రికార్డ్</button>
-        <button id="stopBtn" disabled>⏹ రికార్డింగ్ ఆపు</button>
-        <button id="downloadBtn">📥 వీడియో డౌన్లోడ్</button>
+        <button id="startBtn">▶ వీడియో రికార్డింగ్ ప్రారంభించండి</button>
+        <button id="stopBtn" disabled>⏹ రికార్డింగ్ ఆపివేయి</button>
+        <button id="downloadBtn">📥 వీడియో డౌన్‌లోడ్ చేయండి</button>
     </div>
 
+    <!-- ఇక్కడ మీ మెయిన్ వీడియో ఉండాలి -->
     <video id="video" src="video.mp4" style="display: none;" crossorigin="anonymous"></video>
 
     <script>
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d', { alpha: false }); // పర్ఫార్మెన్స్ కోసం ఆల్ఫా ఫాల్స్
+        const ctx = canvas.getContext('2d', { alpha: false });
         const startBtn = document.getElementById('startBtn');
         const stopBtn = document.getElementById('stopBtn');
         const downloadBtn = document.getElementById('downloadBtn');
@@ -46,22 +44,25 @@
         let watermarkScrollY = 0;
         let isScrolling = false;
         let finalVideoUrl = null;
-        let animationId;
 
-        document.getElementById('imageUpload').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    watermarkImage.src = event.target.result;
-                    watermarkImage.onload = () => {
-                        watermarkScrollY = canvas.height;
-                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    };
-                };
-                reader.readAsDataURL(file);
-            }
-        });
+        // 1. యూజర్ లాగిన్ నంబర్ పొందడం (దీన్ని మీరు మీ లాగిన్ సిస్టమ్ నుండి పంపాలి)
+        // ఉదాహరణకు మనం '8341306663' అనుకుందాం
+        const userMobile = "8341306663"; 
+        document.getElementById('userDisplay').innerText = "లాగిన్ మొబైల్: " + userMobile;
+
+        // 2. మొబైల్ నంబర్ ఆధారంగా ఇమేజ్ లోడ్ చేయడం
+        // మీ ఇమేజెస్ అన్నీ ఒకే ఫోల్డర్ లో ఉండాలి. ఉదాహరణకు: images/8341306663.jpg
+        watermarkImage.src = "images/" + userMobile + ".jpg"; 
+        watermarkImage.crossOrigin = "anonymous";
+
+        watermarkImage.onload = () => {
+            console.log("యూజర్ ఇమేజ్ లోడ్ అయింది.");
+            watermarkScrollY = canvas.height;
+        };
+
+        watermarkImage.onerror = () => {
+            alert("క్షమించండి! మీ మొబైల్ నంబర్‌కు సంబంధించిన బ్యానర్ లభించలేదు.");
+        };
 
         video.addEventListener('loadedmetadata', function() {
             canvas.width = video.videoWidth;
@@ -69,15 +70,8 @@
             watermarkScrollY = canvas.height;
         });
 
-        function draw() {
-            if (video.paused || video.ended) {
-                cancelAnimationFrame(animationId);
-                return;
-            }
-            
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            if (watermarkImage.src) {
+        function drawWatermark() {
+            if (watermarkImage.complete) {
                 let wWidth = canvas.width * 0.98; 
                 let wHeight = (watermarkImage.height / watermarkImage.width) * wWidth;
                 let xPos = (canvas.width - wWidth) / 2;
@@ -85,20 +79,22 @@
                 ctx.drawImage(watermarkImage, xPos, watermarkScrollY, wWidth, wHeight);
                 
                 if (isScrolling) {
-                    watermarkScrollY -= 2.5; // వేగంగా స్క్రోల్ అవ్వడానికి
+                    watermarkScrollY -= 2.0; 
                     if (watermarkScrollY + wHeight < 0) {
                         watermarkScrollY = canvas.height;
                     }
                 }
             }
-            animationId = requestAnimationFrame(draw);
+        }
+
+        function draw() {
+            if (video.paused || video.ended) return;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            drawWatermark();
+            requestAnimationFrame(draw);
         }
 
         startBtn.addEventListener('click', () => {
-            if (!watermarkImage.src) {
-                alert("ముందుగా ఇమేజ్ సెలెక్ట్ చేయండి!");
-                return;
-            }
             recordedChunks = [];
             if (finalVideoUrl) URL.revokeObjectURL(finalVideoUrl);
             finalVideoUrl = null;
@@ -108,23 +104,19 @@
             video.play();
             draw();
 
-            // వేగంగా రికార్డ్ అవ్వడానికి స్ట్రీమ్ సెట్టింగ్స్
-            const canvasStream = canvas.captureStream(30); 
+            const canvasStream = canvas.captureStream(30);
             let videoStream = video.captureStream ? video.captureStream() : video.mozCaptureStream();
 
             if (videoStream && videoStream.getAudioTracks().length > 0) {
                 canvasStream.addTrack(videoStream.getAudioTracks()[0]);
             }
 
-            // High Bitrate ఇచ్చాను - దీనివల్ల ప్రాసెసింగ్ వేగంగా మరియు క్వాలిటీగా ఉంటుంది
-            const options = { 
+            mediaRecorder = new MediaRecorder(canvasStream, { 
                 mimeType: 'video/webm;codecs=vp8',
-                videoBitsPerSecond: 5000000 // 5Mbps
-            };
+                videoBitsPerSecond: 5000000 
+            });
 
-            mediaRecorder = new MediaRecorder(canvasStream, options);
             mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
-            
             mediaRecorder.onstop = () => {
                 const blob = new Blob(recordedChunks, { type: 'video/webm' });
                 finalVideoUrl = URL.createObjectURL(blob);
@@ -148,7 +140,7 @@
             if (finalVideoUrl) {
                 const a = document.createElement('a');
                 a.href = finalVideoUrl;
-                a.download = 'lic_fast_video.webm';
+                a.download = 'LIC_Agent_Video.webm';
                 a.click();
             }
         });
