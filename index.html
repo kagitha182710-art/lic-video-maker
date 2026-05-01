@@ -23,7 +23,7 @@
 
 <div class="container">
     <h2>LIC వీడియో ఎడిటర్ - ఏజెంట్ పోర్టల్</h2>
-    <div id="status" class="status-box loading">గూగుల్ షీట్ నుండి డేటా తీసుకుంటున్నాము...</div>
+    <div id="status" class="status-box loading">డేటా కోసం ప్రయత్నిస్తున్నాము...</div>
 
     <canvas id="canvas"></canvas>
 
@@ -55,7 +55,7 @@
     let finalVideoUrl = null;
     let currentVideo = mainVideo;
 
-    // మీ గూగుల్ షీట్ లింక్ (CSV)
+    // మీ గూగుల్ షీట్ లింక్ (ముఖ్య గమనిక: చివరన output=csv ఉండాలి)
     const sheetCSVUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vReHcj4b9ZAKFQxhMyXFZ_sQQsQHYlyhuPpxr1FmwGXsGRuFhcyUTcP3SeIsmLL04fXfS56feC3Hsoq/pub?gid=0&single=true&output=csv";
     
     // మీరు కోరిన మొబైల్ నంబర్
@@ -63,18 +63,21 @@
 
     async function loadAgentData() {
         try {
-            // క్యాచ్ సమస్య లేకుండా టైమ్‌స్టాంప్ యాడ్ చేస్తున్నాను
-            const response = await fetch(sheetCSVUrl + "&t=" + new Date().getTime());
+            // బ్రౌజర్ బ్లాక్ చేయకుండా ఉండటానికి 'no-cache' మరియు రిక్వెస్ట్ మోడ్ మార్చాను
+            const response = await fetch(sheetCSVUrl, { cache: "no-store" });
             const csvData = await response.text();
-            const rows = csvData.split("\n");
             
+            if (!csvData || csvData.includes("<!DOCTYPE html>")) {
+                throw new Error("CSV డేటా రాలేదు. షీట్ పబ్లిష్ సెట్టింగ్స్ చూడండి.");
+            }
+
+            const rows = csvData.split("\n");
             let imageUrl = "";
             let outroUrl = "";
 
             for (let i = 1; i < rows.length; i++) {
                 const cols = rows[i].split(",");
                 if (cols[0]) {
-                    // నంబర్‌లోని స్పేస్‌లు, స్పెషల్ క్యారెక్టర్లు తీసివేసి మ్యాచ్ చేయడం
                     const sheetMobile = cols[0].replace(/\D/g, '').trim();
                     if (sheetMobile === loginMobile) {
                         imageUrl = cols[1] ? cols[1].trim() : "";
@@ -85,25 +88,28 @@
             }
 
             if (imageUrl && outroUrl) {
+                // ఇమేజ్ సెటప్
                 watermarkImage.crossOrigin = "anonymous";
                 watermarkImage.src = imageUrl;
 
+                // అవుట్రో వీడియో సెటప్
                 outroVideo.src = outroUrl;
                 outroVideo.load();
 
                 watermarkImage.onload = () => {
                     statusDiv.className = "status-box success";
-                    statusDiv.innerText = "ఏజెంట్ వివరాలు (9959041086) దొరికాయి! ప్లే చేయవచ్చు.";
+                    statusDiv.innerText = "9959041086 వివరాలు దొరికాయి! రికార్డింగ్ ప్రారంభించవచ్చు.";
                     startBtn.disabled = false;
                     watermarkScrollY = canvas.height;
                 };
             } else {
                 statusDiv.className = "status-box error";
-                statusDiv.innerText = "షీట్‌లో 9959041086 వివరాలు దొరకలేదు. Column A మరియు C చెక్ చేయండి.";
+                statusDiv.innerText = "షీట్‌లో ఈ నంబర్ వివరాలు లేవు! (నంబర్: " + loginMobile + ")";
             }
         } catch (e) {
             statusDiv.className = "status-box error";
-            statusDiv.innerText = "నెట్‌వర్క్ ఎర్రర్! షీట్ పబ్లిష్ అయిందో లేదో చూడండి.";
+            statusDiv.innerText = "షీట్ లోడ్ అవ్వడం లేదు! మీ గూగుల్ షీట్ లో 'Publish to Web' మళ్ళీ ఒకసారి చేయండి.";
+            console.error(e);
         }
     }
 
@@ -177,7 +183,7 @@
     downloadBtn.onclick = () => {
         if (finalVideoUrl) {
             const a = document.createElement('a');
-            a.href = finalVideoUrl; a.download = 'LIC_Final_9959041086.webm'; a.click();
+            a.href = finalVideoUrl; a.download = 'LIC_9959041086_Video.webm'; a.click();
         }
     };
 </script>
