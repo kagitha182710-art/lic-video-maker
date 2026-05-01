@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Watermark Editor</title>
+    <title>Scrolling Banner Video Editor</title>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; margin-top: 20px; background-color: #f4f4f9;}
         canvas { border: 2px solid #333; border-radius: 8px; margin-top: 15px; background-color: #000; max-width: 100%; max-height: 60vh; object-fit: contain;}
@@ -13,9 +13,9 @@
 </head>
 <body>
 
-    <h2>వెబ్ వీడియో ఎడిటర్</h2>
+    <h2>వెబ్ వీడియో ఎడిటర్ - స్క్రోలింగ్ బ్యానర్</h2>
     
-    <label><b>వాటర్ మార్క్ ఇమేజ్ అప్లోడ్ చేయండి: </b></label>
+    <label><b>మీ బ్యానర్ ఇమేజ్ అప్లోడ్ చేయండి: </b></label>
     <input type="file" id="imageUpload" accept="image/*" /><br>
 
     <canvas id="canvas"></canvas><br>
@@ -36,6 +36,9 @@
         let watermarkImage = new Image();
         let mediaRecorder;
         let recordedChunks = [];
+        
+        // స్క్రోలింగ్ కోసం వాడే వేరియబుల్
+        let watermarkScrollY = null; 
 
         document.getElementById('imageUpload').addEventListener('change', function(e) {
             const file = e.target.files[0];
@@ -53,21 +56,45 @@
 
         function draw() {
             if (video.paused || video.ended) return;
+            
+            // 1. ఒరిజినల్ వీడియోను డ్రా చేయడం
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            if (watermarkImage.src) {
-                let size = canvas.width * 0.15; 
-                if(size < 60) size = 60; if(size > 150) size = 150;
-                ctx.globalAlpha = 0.8; 
-                ctx.drawImage(watermarkImage, canvas.width - size - 20, canvas.height - size - 20, size, size); 
-                ctx.globalAlpha = 1.0; 
+            // 2. స్క్రోలింగ్ వాటర్ మార్క్ ను డ్రా చేయడం
+            if (watermarkImage.src && watermarkScrollY !== null) {
+                
+                // ఇమేజ్ ఒరిజినల్ క్వాలిటీ పాడవకుండా వీడియో సైజుకి తగ్గట్టు మార్చడం
+                let bannerWidth = canvas.width * 0.9; // వీడియో వెడల్పులో 90% ఆక్రమిస్తుంది
+                let bannerHeight = (watermarkImage.height / watermarkImage.width) * bannerWidth;
+                let xPosition = (canvas.width - bannerWidth) / 2; // కరెక్ట్ గా మధ్యలో (Center) వచ్చేలా
+
+                ctx.globalAlpha = 0.85; // 85% ట్రాన్స్పరెన్సీ (వెనుక వీడియో కొంచెం కనిపిస్తుంది)
+                
+                // ఇమేజ్ ని కాన్వాస్ పై గీయడం
+                ctx.drawImage(watermarkImage, xPosition, watermarkScrollY, bannerWidth, bannerHeight); 
+                
+                ctx.globalAlpha = 1.0; // తిరిగి నార్మల్ చేయడం
+
+                // 3. స్క్రోలింగ్ యానిమేషన్ లాజిక్ (పైకి కదలడం)
+                watermarkScrollY -= 2; // స్పీడ్. ఇక్కడ 2 బదులు 3 పెడితే ఇంకా ఫాస్ట్ గా వెళ్తుంది, 1 పెడితే స్లో గా వెళ్తుంది.
+
+                // ఇమేజ్ పూర్తిగా పైకి వెళ్ళిపోయిన తర్వాత, మళ్ళీ కింద నుండి స్టార్ట్ అవ్వడానికి
+                if (watermarkScrollY + bannerHeight < 0) {
+                    watermarkScrollY = canvas.height;
+                }
             }
+            
             requestAnimationFrame(draw);
         }
 
         startBtn.addEventListener('click', () => {
             video.play();
+            
+            // రికార్డింగ్ స్టార్ట్ అవ్వగానే ఇమేజ్ వీడియో కింద భాగం నుండి స్టార్ట్ అవ్వాలి
+            watermarkScrollY = canvas.height; 
+            
             draw(); 
+            
             const canvasStream = canvas.captureStream(30); 
             let videoStream;
             if (video.captureStream) videoStream = video.captureStream();
@@ -92,7 +119,7 @@
             mediaRecorder.onstop = () => {
                 const blob = new Blob(recordedChunks, { type: 'video/webm' });
                 const url = URL.createObjectURL(blob);
-                const a = document.createElement('a'); a.href = url; a.download = 'edited-video.webm'; a.click();
+                const a = document.createElement('a'); a.href = url; a.download = 'scrolling-banner-video.webm'; a.click();
             };
         });
 
