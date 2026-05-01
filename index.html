@@ -3,27 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Final Video Fix - 9959041086</title>
+    <title>LIC Video Maker - 9959041086 (Final Fix)</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; padding: 20px; }
         .container { max-width: 800px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
         canvas { border: 4px solid #004aad; border-radius: 12px; background: #000; max-width: 100%; height: auto; }
         .status-box { padding: 15px; margin: 15px 0; font-weight: bold; border-radius: 8px; font-size: 16px; }
-        .loading { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
-        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .loading { background: #fff3cd; color: #856404; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
         button { padding: 14px 28px; margin: 10px 5px; cursor: pointer; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; }
         #startBtn { background: #004aad; color: white; }
         #stopBtn { background: #dc3545; color: white; }
         #downloadBtn { background: #28a745; color: white; display: none; }
-        button:disabled { background: #ccc !important; cursor: not-allowed; }
+        button:disabled { background: #ccc !important; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h2>LIC వీడియో ఎడిటర్ - ఏజెంట్ పోర్టల్</h2>
-    <div id="status" class="status-box loading">గూగుల్ షీట్ నుండి డేటా తీసుకుంటున్నాము...</div>
+    <div id="status" class="status-box loading">గూగుల్ షీట్ నుండి డేటా లోడ్ అవుతోంది...</div>
 
     <canvas id="canvas"></canvas>
 
@@ -34,8 +34,8 @@
     </div>
 </div>
 
-<video id="mainVideo" src="video.mp4" style="display: none;" crossorigin="anonymous" playsinline muted></video>
-<video id="outroVideo" style="display: none;" crossorigin="anonymous" playsinline muted></video>
+<video id="mainVideo" src="video.mp4" style="display: none;" crossorigin="anonymous" playsinline></video>
+<video id="outroVideo" style="display: none;" crossorigin="anonymous" playsinline></video>
 
 <script>
     const mainVideo = document.getElementById('mainVideo');
@@ -52,8 +52,8 @@
     let recordedChunks = [];
     let watermarkScrollY = 0;
     let isScrolling = false;
-    let finalVideoUrl = null;
     let currentVideo = mainVideo;
+    let audioStreamDest;
 
     const sheetCSVUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vReHcj4b9ZAKFQxhMyXFZ_sQQsQHYlyhuPpxr1FmwGXsGRuFhcyUTcP3SeIsmLL04fXfS56feC3Hsoq/pub?gid=0&single=true&output=csv";
     const loginMobile = "9959041086"; 
@@ -65,7 +65,6 @@
             const rows = data.split("\n");
             
             let imageUrl = "", outroUrl = "";
-
             for (let i = 1; i < rows.length; i++) {
                 const cols = rows[i].split(",");
                 if (cols[0] && cols[0].replace(/\D/g, '') === loginMobile) {
@@ -78,23 +77,22 @@
             if (imageUrl && outroUrl) {
                 watermarkImage.crossOrigin = "anonymous";
                 watermarkImage.src = imageUrl;
-                
                 outroVideo.src = outroUrl;
                 outroVideo.load();
 
                 watermarkImage.onload = () => {
                     statusDiv.className = "status-box success";
-                    statusDiv.innerText = "9959041086 వివరాలు దొరికాయి! రికార్డింగ్ ప్రారంభించవచ్చు.";
+                    statusDiv.innerText = "ఏజెంట్ వివరాలు దొరికాయి! రికార్డింగ్ ప్రారంభించవచ్చు.";
                     startBtn.disabled = false;
                     watermarkScrollY = canvas.height;
                 };
             } else {
                 statusDiv.className = "status-box error";
-                statusDiv.innerText = "షీట్‌లో 9959041086 కి వివరాలు లేవు!";
+                statusDiv.innerText = "షీట్‌లో డేటా దొరకలేదు!";
             }
         } catch (e) {
             statusDiv.className = "status-box error";
-            statusDiv.innerText = "డేటా లోడింగ్ ఎర్రర్!";
+            statusDiv.innerText = "లోడింగ్ ఎర్రర్!";
         }
     }
 
@@ -110,7 +108,6 @@
         if (currentVideo.paused || currentVideo.ended) return;
         ctx.drawImage(currentVideo, 0, 0, canvas.width, canvas.height);
 
-        // బ్యానర్ కేవలం మెయిన్ వీడియో మీద మాత్రమే
         if (currentVideo === mainVideo && watermarkImage.src) {
             let wWidth = canvas.width * 0.98;
             let wHeight = (watermarkImage.height / watermarkImage.width) * wWidth;
@@ -126,27 +123,38 @@
     }
 
     startBtn.onclick = () => {
+        // Audio Context ని యూజర్ క్లిక్ మీద యాక్టివేట్ చేస్తున్నాం (ముఖ్యమైనది)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        audioStreamDest = audioCtx.createMediaStreamDestination();
+        
+        const source1 = audioCtx.createMediaElementSource(mainVideo);
+        const source2 = audioCtx.createMediaElementSource(outroVideo);
+        
+        source1.connect(audioStreamDest);
+        source2.connect(audioStreamDest);
+        source1.connect(audioCtx.destination);
+        source2.connect(audioCtx.destination);
+
         recordedChunks = [];
         downloadBtn.style.display = "none";
         isScrolling = true;
         currentVideo = mainVideo;
         
-        mainVideo.muted = false;
-        outroVideo.muted = false;
-
         mainVideo.play();
         draw();
 
-        // ఆడియో ప్రాబ్లం లేకుండా స్ట్రీమ్ ని పక్కాగా తీసుకోవడం
-        const stream = canvas.captureStream(30);
-        
-        mediaRecorder = new MediaRecorder(stream, { 
+        const canvasStream = canvas.captureStream(30);
+        const combinedStream = new MediaStream([
+            ...canvasStream.getVideoTracks(),
+            ...audioStreamDest.stream.getAudioTracks()
+        ]);
+
+        mediaRecorder = new MediaRecorder(combinedStream, { 
             mimeType: 'video/webm;codecs=vp8', 
             videoBitsPerSecond: 6000000 
         });
 
         mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
-        
         mediaRecorder.onstop = () => {
             const blob = new Blob(recordedChunks, { type: 'video/webm' });
             finalVideoUrl = URL.createObjectURL(blob);
@@ -158,25 +166,22 @@
         stopBtn.disabled = false;
     };
 
-    // --- ఇక్కడ మార్పు చేశాను (మొదటి వీడియో అయిపోగానే రెండోది రావడానికి) ---
-    mainVideo.onended = () => {
-        console.log("Main video ended. Starting Outro...");
+    // మొదటి వీడియో పూర్తికాగానే రెండో వీడియో లోడ్ అయ్యేలా పక్కా లాజిక్
+    mainVideo.addEventListener('ended', () => {
         isScrolling = false;
         currentVideo = outroVideo;
-        outroVideo.play().then(() => {
-            draw();
-        }).catch(err => console.error("Outro play error:", err));
-    };
+        outroVideo.play();
+        draw();
+    });
 
-    outroVideo.onended = () => {
-        console.log("Outro video ended. Stopping recording...");
+    outroVideo.addEventListener('ended', () => {
         if(!stopBtn.disabled) stopBtn.onclick();
-    };
+    });
 
     stopBtn.onclick = () => {
         mainVideo.pause();
         outroVideo.pause();
-        if(mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
+        if(mediaRecorder) mediaRecorder.stop();
         startBtn.disabled = false;
         stopBtn.disabled = true;
     };
@@ -185,7 +190,7 @@
         if (finalVideoUrl) {
             const a = document.createElement('a');
             a.href = finalVideoUrl;
-            a.download = 'LIC_Agent_Video.webm';
+            a.download = 'LIC_Agent_Final_Video.webm';
             a.click();
         }
     };
