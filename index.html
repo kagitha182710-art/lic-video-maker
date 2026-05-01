@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Video Maker - 9959041086 (Final Fix)</title>
+    <title>LIC Video Maker - 9959041086 (Final)</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; padding: 20px; }
         .container { max-width: 800px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
@@ -23,23 +23,20 @@
 
 <div class="container">
     <h2>LIC వీడియో ఎడిటర్ - ఏజెంట్ పోర్టల్</h2>
-    <div id="status" class="status-box loading">గూగుల్ షీట్ నుండి డేటా లోడ్ అవుతోంది...</div>
-
+    <div id="status" class="status-box loading">డేటా లోడ్ అవుతోంది...</div>
     <canvas id="canvas"></canvas>
-
     <div class="controls">
         <button id="startBtn" disabled>▶ రికార్డింగ్ ప్రారంభించండి</button>
         <button id="stopBtn" disabled>⏹ ఆపు</button>
-        <button id="downloadBtn">📥 ఫైనల్ వీడియో డౌన్‌లోడ్ చేయండి</button>
+        <button id="downloadBtn">📥 వీడియో డౌన్‌లోడ్</button>
     </div>
 </div>
 
-<video id="mainVideo" src="video.mp4" style="display: none;" crossorigin="anonymous" playsinline></video>
-<video id="outroVideo" style="display: none;" crossorigin="anonymous" playsinline></video>
+<!-- ఒకే ఒక వీడియో ఎలిమెంట్ ని వాడుతున్నాం -->
+<video id="player" style="display: none;" crossorigin="anonymous" playsinline></video>
 
 <script>
-    const mainVideo = document.getElementById('mainVideo');
-    const outroVideo = document.getElementById('outroVideo');
+    const player = document.getElementById('player');
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     const startBtn = document.getElementById('startBtn');
@@ -52,109 +49,91 @@
     let recordedChunks = [];
     let watermarkScrollY = 0;
     let isScrolling = false;
-    let currentVideo = mainVideo;
-    let audioStreamDest;
+    let finalVideoUrl = null;
+    
+    let mainVideoSrc = "video.mp4";
+    let outroVideoSrc = ""; 
+    let isOutroPlaying = false;
 
     const sheetCSVUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vReHcj4b9ZAKFQxhMyXFZ_sQQsQHYlyhuPpxr1FmwGXsGRuFhcyUTcP3SeIsmLL04fXfS56feC3Hsoq/pub?gid=0&single=true&output=csv";
     const loginMobile = "9959041086"; 
 
-    async function loadData() {
+    async function init() {
         try {
-            const response = await fetch(sheetCSVUrl + "&t=" + new Date().getTime());
+            const response = await fetch(sheetCSVUrl + "&t=" + Date.now());
             const data = await response.text();
             const rows = data.split("\n");
             
-            let imageUrl = "", outroUrl = "";
+            let imageUrl = "";
             for (let i = 1; i < rows.length; i++) {
                 const cols = rows[i].split(",");
                 if (cols[0] && cols[0].replace(/\D/g, '') === loginMobile) {
                     imageUrl = cols[1]?.trim();
-                    outroUrl = cols[2]?.trim();
+                    outroVideoSrc = cols[2]?.trim();
                     break;
                 }
             }
 
-            if (imageUrl && outroUrl) {
+            if (imageUrl && outroVideoSrc) {
                 watermarkImage.crossOrigin = "anonymous";
                 watermarkImage.src = imageUrl;
-                outroVideo.src = outroUrl;
-                outroVideo.load();
+                
+                // మొదటి వీడియోను ముందే లోడ్ చేయడం
+                player.src = mainVideoSrc;
+                player.load();
 
                 watermarkImage.onload = () => {
                     statusDiv.className = "status-box success";
-                    statusDiv.innerText = "ఏజెంట్ వివరాలు దొరికాయి! రికార్డింగ్ ప్రారంభించవచ్చు.";
+                    statusDiv.innerText = "అన్నీ సిద్ధంగా ఉన్నాయి! 9959041086 ఏజెంట్ కోసం రికార్డ్ చేయవచ్చు.";
                     startBtn.disabled = false;
-                    watermarkScrollY = canvas.height;
                 };
             } else {
                 statusDiv.className = "status-box error";
-                statusDiv.innerText = "షీట్‌లో డేటా దొరకలేదు!";
+                statusDiv.innerText = "షీట్‌లో డేటా సరిగ్గా లేదు!";
             }
         } catch (e) {
             statusDiv.className = "status-box error";
-            statusDiv.innerText = "లోడింగ్ ఎర్రర్!";
+            statusDiv.innerText = "లోడింగ్ సమస్య!";
         }
     }
 
-    loadData();
+    init();
 
-    mainVideo.onloadedmetadata = () => {
-        canvas.width = mainVideo.videoWidth;
-        canvas.height = mainVideo.videoHeight;
+    player.onloadedmetadata = () => {
+        canvas.width = player.videoWidth;
+        canvas.height = player.videoHeight;
         watermarkScrollY = canvas.height;
     };
 
-    function draw() {
-        if (currentVideo.paused || currentVideo.ended) return;
-        ctx.drawImage(currentVideo, 0, 0, canvas.width, canvas.height);
+    function render() {
+        if (player.paused || player.ended) return;
+        ctx.drawImage(player, 0, 0, canvas.width, canvas.height);
 
-        if (currentVideo === mainVideo && watermarkImage.src) {
+        // బ్యానర్ కేవలం మెయిన్ వీడియో మీద మాత్రమే
+        if (!isOutroPlaying && watermarkImage.src) {
             let wWidth = canvas.width * 0.98;
             let wHeight = (watermarkImage.height / watermarkImage.width) * wWidth;
             let xPos = (canvas.width - wWidth) / 2;
             ctx.drawImage(watermarkImage, xPos, watermarkScrollY, wWidth, wHeight);
-            
             if (isScrolling) {
                 watermarkScrollY -= 2.2;
                 if (watermarkScrollY + wHeight < 0) watermarkScrollY = canvas.height;
             }
         }
-        requestAnimationFrame(draw);
+        requestAnimationFrame(render);
     }
 
     startBtn.onclick = () => {
-        // Audio Context ని యూజర్ క్లిక్ మీద యాక్టివేట్ చేస్తున్నాం (ముఖ్యమైనది)
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        audioStreamDest = audioCtx.createMediaStreamDestination();
-        
-        const source1 = audioCtx.createMediaElementSource(mainVideo);
-        const source2 = audioCtx.createMediaElementSource(outroVideo);
-        
-        source1.connect(audioStreamDest);
-        source2.connect(audioStreamDest);
-        source1.connect(audioCtx.destination);
-        source2.connect(audioCtx.destination);
-
         recordedChunks = [];
-        downloadBtn.style.display = "none";
         isScrolling = true;
-        currentVideo = mainVideo;
-        
-        mainVideo.play();
-        draw();
+        isOutroPlaying = false;
+        player.src = mainVideoSrc;
+        player.play();
+        render();
 
-        const canvasStream = canvas.captureStream(30);
-        const combinedStream = new MediaStream([
-            ...canvasStream.getVideoTracks(),
-            ...audioStreamDest.stream.getAudioTracks()
-        ]);
-
-        mediaRecorder = new MediaRecorder(combinedStream, { 
-            mimeType: 'video/webm;codecs=vp8', 
-            videoBitsPerSecond: 6000000 
-        });
-
-        mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+        const stream = canvas.captureStream(30);
+        mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8', videoBitsPerSecond: 6000000 });
+        mediaRecorder.ondataavailable = (e) => recordedChunks.push(e.data);
         mediaRecorder.onstop = () => {
             const blob = new Blob(recordedChunks, { type: 'video/webm' });
             finalVideoUrl = URL.createObjectURL(blob);
@@ -166,21 +145,21 @@
         stopBtn.disabled = false;
     };
 
-    // మొదటి వీడియో పూర్తికాగానే రెండో వీడియో లోడ్ అయ్యేలా పక్కా లాజిక్
-    mainVideo.addEventListener('ended', () => {
-        isScrolling = false;
-        currentVideo = outroVideo;
-        outroVideo.play();
-        draw();
-    });
-
-    outroVideo.addEventListener('ended', () => {
-        if(!stopBtn.disabled) stopBtn.onclick();
-    });
+    // మెయిన్ వీడియో అయిపోగానే ప్లేయర్ లోపల వీడియో లింక్ మార్చడం
+    player.onended = () => {
+        if (!isOutroPlaying) {
+            isOutroPlaying = true;
+            isScrolling = false;
+            player.src = outroVideoSrc;
+            player.play(); // ఆటోమేటిక్‌గా రెండో క్లిప్ ప్లే అవుతుంది
+        } else {
+            // రెండో క్లిప్ కూడా అయిపోతే రికార్డింగ్ ఆపేయాలి
+            if(!stopBtn.disabled) stopBtn.onclick();
+        }
+    };
 
     stopBtn.onclick = () => {
-        mainVideo.pause();
-        outroVideo.pause();
+        player.pause();
         if(mediaRecorder) mediaRecorder.stop();
         startBtn.disabled = false;
         stopBtn.disabled = true;
@@ -190,7 +169,7 @@
         if (finalVideoUrl) {
             const a = document.createElement('a');
             a.href = finalVideoUrl;
-            a.download = 'LIC_Agent_Final_Video.webm';
+            a.download = 'LIC_Agent_Final.webm';
             a.click();
         }
     };
