@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Video Maker - Dynamic Watermark</title>
+    <title>LIC Video Maker - Advanced Watermark</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; padding: 10px; -webkit-user-select: none; user-select: none; }
         .container { max-width: 450px; margin: auto; background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
@@ -22,7 +22,7 @@
 <body oncontextmenu="return false;">
 
 <div class="container">
-    <div id="status" class="status-box loading">డైనమిక్ వాటర్‌మార్క్ సెట్ చేస్తున్నాము...</div>
+    <div id="status" class="status-box loading">సెక్యూర్ వాటర్‌మార్క్ లోడ్ అవుతోంది...</div>
     <canvas id="canvas"></canvas>
     <div style="margin-top:15px;">
         <button id="startBtn" disabled>▶ రికార్డింగ్ ప్రారంభించండి</button>
@@ -48,11 +48,12 @@
     let recorder, chunks = [];
     
     // ఏజెంట్ వివరాలు
-    let agentName = "";
+    let waterName = "";
     let agentMob = "";
     
     // వాటర్‌మార్క్ పొజిషన్స్
-    let watermarkX = 50, watermarkY = 50;
+    let nameX = 50, nameY = 50;
+    let mobX = 100, mobY = 150;
     let lastUpdate = 0;
 
     let mainSrc = "https://kagitha182710-art.github.io/lic-video-maker/today.mp4?v=" + Date.now();
@@ -74,8 +75,9 @@
             for (let i = 0; i < rows.length; i++) {
                 let cols = rows[i].split(",");
                 if (cols[0] && cols[0].trim().includes(agentMobile)) {
-                    agentName = cols[4]?.trim() || "LIC Agent"; // 5వ కాలమ్ లో పేరు ఉందని భావిస్తున్నాను
+                    // Column A - Mobile, Column E (Index 4) - Water name
                     agentMob = cols[0]?.trim(); 
+                    waterName = cols[4]?.trim() || ""; 
                     fSrc = cols[1]?.trim(); 
                     outroSrc = cols[2]?.trim(); 
                     break;
@@ -99,7 +101,7 @@
         canvas.height = v.videoHeight;
         render();
         status.className = "status-box success";
-        status.innerText = "డైనమిక్ ప్రొటెక్షన్ రెడీ!";
+        status.innerText = "అడ్వాన్స్‌డ్ సెక్యూరిటీ ఆన్!";
         startBtn.disabled = false;
     };
 
@@ -107,29 +109,41 @@
         let w = canvas.width;
         let h = canvas.height;
 
-        // 1. మెయిన్ వీడియో
         ctx.drawImage(v, 0, 0, w, h);
 
-        // 2. డైనమిక్ వాటర్‌మార్క్ (రాండమ్ గా మారుతుంది)
+        // --- రాండమ్ వాటర్‌మార్క్ లాజిక్ ---
         if (!v.paused && !v.ended) {
             let now = Date.now();
-            if (now - lastUpdate > 3000) { // ప్రతి 3 సెకన్లకు ఒకసారి ప్లేస్ మారుతుంది
-                watermarkX = Math.random() * (w - 150) + 50;
-                watermarkY = Math.random() * (h - 250) + 100;
+            if (now - lastUpdate > 4000) { // ప్రతి 4 సెకన్లకు పొజిషన్ మారుతుంది
+                // పేరు కోసం రాండమ్ పొజిషన్ (స్క్రీన్ బయటకు వెళ్లకుండా)
+                nameX = Math.random() * (w - 180) + 20;
+                nameY = Math.random() * (h/2 - 50) + 50; // స్క్రీన్ పై సగంలో పేరు
+                
+                // మొబైల్ నంబర్ కోసం వేరే రాండమ్ పొజిషన్
+                mobX = Math.random() * (w - 150) + 20;
+                mobY = Math.random() * (h/2 - 50) + (h/2); // స్క్రీన్ కింద సగంలో నంబర్
+                
                 lastUpdate = now;
             }
             
             ctx.save();
-            ctx.globalAlpha = 0.4; // కొంచెం మసకగా
-            ctx.font = "bold 20px Segoe UI";
+            ctx.globalAlpha = 0.35; // మసక రంగు
             ctx.fillStyle = "white";
-            ctx.shadowBlur = 4;
+            ctx.shadowBlur = 3;
             ctx.shadowColor = "black";
-            ctx.fillText(agentName + " - " + agentMob, watermarkX, watermarkY);
+            
+            // పేరు డిస్ప్లే (బోల్డ్ గా)
+            ctx.font = "bold 20px Segoe UI";
+            if(waterName) ctx.fillText(waterName, nameX, nameY);
+            
+            // మొబైల్ నంబర్ డిస్ప్లే
+            ctx.font = "18px Segoe UI";
+            ctx.fillText(agentMob, mobX, mobY);
+            
             ctx.restore();
         }
 
-        // 3. కింద ఫిక్స్‌డ్ బ్యానర్ (అడ్జస్ట్ చేసిన వెర్షన్)
+        // ఫిక్స్‌డ్ బ్యానర్ (కింద)
         if (fixedImg.src) {
             let targetWidth = w * 0.95; 
             let fH = ((fixedImg.height / fixedImg.width) * targetWidth) * 0.85; 
@@ -138,7 +152,7 @@
             ctx.drawImage(fixedImg, xOffset, h - fH - yOffset, targetWidth, fH);
         }
 
-        // 4. బోర్డర్ (అందరికంటే పైన)
+        // బోర్డర్ (అందరికంటే పైన)
         if (borderImg.complete) {
             ctx.drawImage(borderImg, 0, 0, w, h);
         }
@@ -150,14 +164,13 @@
             requestAnimationFrame(loop);
         }
     }
-
     v.addEventListener('play', loop);
 
     startBtn.onclick = async () => {
         try {
             startBtn.disabled = true;
             status.className = "status-box recording";
-            status.innerText = "వీడియో తయారవుతోంది...";
+            status.innerText = "సెక్యూర్ వీడియో తయారవుతోంది...";
 
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -181,11 +194,10 @@
             recorder.onstop = () => {
                 const blob = new Blob(chunks, { type: 'video/webm' });
                 downloadBtn.href = URL.createObjectURL(blob);
-                downloadBtn.download = "LIC_Secured_Video.webm";
+                downloadBtn.download = "LIC_Watermarked_Video.webm";
                 downloadBtn.style.display = "inline-block";
-                status.innerText = "డౌన్‌లోడ్ చేసుకోండి!";
+                status.innerText = "డౌన్‌లోడ్ సిద్ధం!";
             };
-
             recorder.start();
             stopBtn.disabled = false;
         } catch (e) { alert(e.message); }
