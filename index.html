@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Pro Editor - 100% Voice Fix</title>
+    <title>LIC Pro Editor - Perfect Sync</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; padding: 10px; }
         .container { max-width: 450px; margin: auto; background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
         canvas { border: 4px solid #004aad; border-radius: 10px; background: #000; width: 100%; height: auto; }
         .status-box { padding: 10px; margin-bottom: 10px; border-radius: 5px; font-weight: bold; font-size: 14px; }
         .success { background: #d4edda; color: #155724; }
+        .loading { background: #fff3cd; color: #856404; }
         button { padding: 12px 24px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin: 5px; }
         #startBtn { background: #004aad; color: #fff; }
         #stopBtn { background: #d93025; color: #fff; }
@@ -20,13 +21,13 @@
 <body>
 
 <div class="container">
-    <div id="status" class="status-box">వాయిస్ & వీడియో సెటప్ చేస్తున్నాము...</div>
+    <div id="status" class="status-box loading">ఇమేజ్‌లు మరియు వీడియో లోడ్ అవుతున్నాయి...</div>
     <canvas id="canvas"></canvas>
     <div style="margin-top:15px;">
         <button id="startBtn" disabled>▶ రికార్డింగ్ ప్రారంభించండి</button>
         <button id="stopBtn" disabled>⏹ ఆపు</button>
         <br><br>
-        <a id="downloadBtn" href="#">📥 వాయిస్‌తో కూడిన వీడియో డౌన్‌లోడ్</a>
+        <a id="downloadBtn" href="#">📥 ఫైనల్ వీడియో డౌన్‌లోడ్</a>
     </div>
 </div>
 
@@ -56,24 +57,43 @@
             const r = await fetch(sheet + "&cb=" + Date.now());
             const text = await r.text();
             const rows = text.split("\n");
+            
+            let fSrc = "", sSrc = "";
             for (let i = 0; i < rows.length; i++) {
                 let cols = rows[i].split(",");
                 if (cols[0] && cols[0].trim().includes(agentMobile)) {
-                    fixedImg.crossOrigin = "anonymous";
-                    fixedImg.src = cols[1]?.trim(); 
-                    scrollImg.crossOrigin = "anonymous";
-                    scrollImg.src = cols[3]?.trim(); 
+                    fSrc = cols[1]?.trim(); 
                     outroSrc = cols[2]?.trim(); 
+                    sSrc = cols[3]?.trim(); 
                     break;
                 }
             }
-            fixedImg.onload = () => {
-                status.className = "status-box success";
-                status.innerText = "అన్నీ సిద్ధం! రికార్డింగ్ మొదలుపెట్టండి.";
-                startBtn.disabled = false;
-                v.src = mainSrc;
-            };
-        } catch (e) { status.innerText = "డేటా లోడ్ కాలేదు!"; }
+
+            // రెండు ఇమేజ్‌లు 100% లోడ్ అయ్యే వరకు ఆగేలా (Promise) సెట్ చేశాను
+            let loadPromises = [];
+            if (fSrc) {
+                loadPromises.push(new Promise(res => {
+                    fixedImg.crossOrigin = "anonymous";
+                    fixedImg.onload = res;
+                    fixedImg.src = fSrc;
+                }));
+            }
+            if (sSrc) {
+                loadPromises.push(new Promise(res => {
+                    scrollImg.crossOrigin = "anonymous";
+                    scrollImg.onload = res;
+                    scrollImg.src = sSrc;
+                }));
+            }
+
+            await Promise.all(loadPromises);
+
+            status.className = "status-box success";
+            status.innerText = "రెండు బ్యానర్లు పక్కాగా సిద్ధం! రికార్డింగ్ చేయండి.";
+            startBtn.disabled = false;
+            v.src = mainSrc;
+            
+        } catch (e) { status.innerText = "డేటా ఎర్రర్!"; }
     }
 
     loadData();
@@ -81,36 +101,42 @@
     v.onloadedmetadata = () => {
         canvas.width = v.videoWidth;
         canvas.height = v.videoHeight;
-        if (!isScrolling) scrollY = canvas.height;
     };
 
     function draw() {
+        if (v.paused || v.ended) return;
         ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
         let w = canvas.width;
 
-        // 1. స్క్రోలింగ్ బ్యానర్ (ఒకేసారి నెమ్మదిగా)
-        if (scrollImg.complete && scrollImg.src !== "" && isScrolling) {
+        // 1. స్క్రోలింగ్ బ్యానర్ (మొదటి సెకను నుండే కనిపిస్తుంది)
+        if (scrollImg.src && isScrolling) {
             ctx.save();
-            ctx.globalAlpha = 0.15;
+            ctx.globalAlpha = 0.15; // 15% ఒపాసిటీ
             let sH = (scrollImg.height / scrollImg.width) * w;
             ctx.drawImage(scrollImg, 0, scrollY, w, sH);
-            if (scrollY + sH > -50) { scrollY -= 0.40; } // స్పీడ్ కంట్రోల్
+            
+            // నెమ్మదిగా స్క్రోల్ అవ్వడానికి స్పీడ్ (0.8) సెట్ చేశాను
+            if (scrollY + sH > -50) { 
+                scrollY -= 0.8; 
+            }
             ctx.restore();
         }
 
-        // 2. ఫిక్స్‌డ్ బ్యానర్ (కింద స్థిరంగా)
-        if (fixedImg.complete && fixedImg.src !== "") {
+        // 2. ఫిక్స్‌డ్ బ్యానర్ (కింద స్థిరంగా ఉంటుంది)
+        if (fixedImg.src) {
             let fH = (fixedImg.height / fixedImg.width) * w;
             ctx.drawImage(fixedImg, 0, canvas.height - fH, w, fH);
         }
 
-        if (!v.paused && !v.ended) {
-            requestAnimationFrame(draw);
-        }
+        requestAnimationFrame(draw);
     }
 
+    // ప్లే అయినప్పుడు డ్రాయింగ్ ఆటోమేటిక్‌గా మొదలవ్వడానికి
+    v.addEventListener('play', () => {
+        requestAnimationFrame(draw);
+    });
+
     startBtn.onclick = async () => {
-        // ఆడియో కనెక్షన్ ఒకే ప్లేయర్‌కి ఇస్తున్నాం
         if (!audioCtx) {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             dest = audioCtx.createMediaStreamDestination();
@@ -118,22 +144,20 @@
             source.connect(dest);
             source.connect(audioCtx.destination);
         }
-
         if (audioCtx.state === 'suspended') {
             await audioCtx.resume();
         }
 
         chunks = []; 
-        scrollY = canvas.height;
+        // బ్యానర్ వెంటనే పైకి కనిపించడానికి -100 పిక్సెల్స్ దగ్గర మొదలుపెడుతున్నాం
+        scrollY = canvas.height - 100; 
         isScrolling = true;
         isOutro = false;
         
         v.src = mainSrc;
         v.play();
-        draw();
 
         const canvasStream = canvas.captureStream(30);
-        // వీడియో + ఆడియో కలపడం
         const combinedStream = new MediaStream([
             ...canvasStream.getVideoTracks(),
             ...dest.stream.getAudioTracks()
@@ -148,7 +172,7 @@
         recorder.onstop = () => {
             const blob = new Blob(chunks, { type: 'video/webm' });
             downloadBtn.href = URL.createObjectURL(blob);
-            downloadBtn.download = "LIC_Agent_Voice_Fixed.webm";
+            downloadBtn.download = "LIC_Agent_Final_Output.webm";
             downloadBtn.style.display = "inline-block";
         };
 
@@ -156,13 +180,11 @@
         startBtn.disabled = true; stopBtn.disabled = false;
     };
 
-    // వీడియో అయిపోగానే ఒకే ప్లేయర్‌లో లింక్ మార్చడం
     v.onended = () => {
         if (!isOutro && outroSrc) {
             isOutro = true;
             v.src = outroSrc;
             v.play();
-            draw(); // డ్రాయింగ్ మళ్ళీ స్టార్ట్ అవ్వడానికి
         } else {
             stopBtn.click();
         }
