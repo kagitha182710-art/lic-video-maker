@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Video Maker - Fine Tuned</title>
+    <title>LIC Video Maker - Pro Secured</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; padding: 10px; }
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; padding: 10px; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
         .container { max-width: 450px; margin: auto; background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
         canvas { border: 2px solid #ccc; border-radius: 10px; background: #000; width: 100%; height: auto; display: block; margin: auto; }
         .status-box { padding: 10px; margin-bottom: 10px; border-radius: 5px; font-weight: bold; font-size: 14px; }
@@ -16,13 +16,13 @@
         #startBtn { background: #004aad; color: #fff; }
         #stopBtn { background: #d93025; color: #fff; }
         #downloadBtn { background: #1e8e3e; color: #fff; display: none; text-decoration: none; padding: 12px 24px; border-radius: 8px; }
-        button:disabled { background: #ccc; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
     </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
 
 <div class="container">
-    <div id="status" class="status-box loading">వేగం మరియు ఎత్తు సర్దుబాటు చేస్తున్నాము...</div>
+    <div id="status" class="status-box loading">సెక్యూర్ మోడ్‌లో లోడ్ అవుతోంది...</div>
     <canvas id="canvas"></canvas>
     <div style="margin-top:15px;">
         <button id="startBtn" disabled>▶ రికార్డింగ్ ప్రారంభించండి</button>
@@ -48,6 +48,7 @@
     let borderImg = new Image();
     let recorder, chunks = [], scrollY = 0;
     
+    // మెయిన్ వీడియో సోర్స్
     let mainSrc = "https://kagitha182710-art.github.io/lic-video-maker/today.mp4?v=" + Date.now();
     let borderSrc = "TRASPARENT BACKROUND.png"; 
     let outroSrc = "";
@@ -81,7 +82,7 @@
             await Promise.all(loadPromises);
             v.src = mainSrc;
             v.load(); 
-        } catch (e) { status.innerText = "డేటా ఎర్రర్!"; }
+        } catch (e) { status.innerText = "డేటా లోడ్ అవ్వలేదు!"; }
     }
 
     loadData();
@@ -91,7 +92,7 @@
         canvas.height = v.videoHeight;
         render();
         status.className = "status-box success";
-        status.innerText = "వేగం తగ్గించబడింది! ఇప్పుడు రికార్డింగ్ చేయండి.";
+        status.innerText = "ప్రొటెక్షన్ ఆన్! రికార్డింగ్ చేయండి.";
         startBtn.disabled = false;
     };
 
@@ -101,23 +102,20 @@
 
         ctx.drawImage(v, 0, 0, w, h);
 
-        // --- స్క్రోలింగ్ స్పీడ్ సెట్టింగ్ ---
         if (scrollImg.src && isScrolling) {
             ctx.save();
             ctx.globalAlpha = 0.20; 
             let sH = (scrollImg.height / scrollImg.width) * w;
             ctx.drawImage(scrollImg, 0, scrollY, w, sH);
             
-            // 55 సెకన్ల వరకు రావాలి కాబట్టి వేగాన్ని 0.4 కు తగ్గించాను (చాలా నెమ్మదిగా వెళ్తుంది)
+            // 55 సెకన్లకు సరిపోయేలా స్లో స్పీడ్
             if (scrollY + sH > -50) { scrollY -= 0.4; } 
             ctx.restore();
         }
 
-        // --- కింద ఫిక్స్‌డ్ బ్యానర్ అడ్జస్ట్‌మెంట్ ---
         if (fixedImg.src) {
             let targetWidth = w * 0.95; 
-            // హైట్ తగ్గించడానికి ఇక్కడ చిన్న మార్పు చేశాను (0.85 తో మల్టిప్లై చేశాను)
-            let fH = ((fixedImg.height / fixedImg.width) * targetWidth) * 0.85; 
+            let fH = ((fixedImg.height / fixedImg.width) * targetWidth) * 0.85; // హైట్ తగ్గింపు
             let xOffset = (w - targetWidth) / 2; 
             let yOffset = 20; 
             
@@ -142,7 +140,7 @@
         try {
             startBtn.disabled = true;
             status.className = "status-box recording";
-            status.innerText = "నిదానంగా రికార్డ్ అవుతోంది...";
+            status.innerText = "వీడియో రికార్డ్ అవుతోంది...";
 
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -169,7 +167,7 @@
             recorder.onstop = () => {
                 const blob = new Blob(chunks, { type: 'video/webm' });
                 downloadBtn.href = URL.createObjectURL(blob);
-                downloadBtn.download = "LIC_Slow_Smooth_Video.webm";
+                downloadBtn.download = "LIC_Final_Output.webm";
                 downloadBtn.style.display = "inline-block";
                 status.innerText = "వీడియో సిద్ధమైంది!";
             };
@@ -192,6 +190,15 @@
         if (recorder && recorder.state !== "inactive") recorder.stop();
         startBtn.disabled = false; stopBtn.disabled = true;
     };
+
+    // --- సెక్యూరిటీ కోడ్ (Code Protection) ---
+    document.addEventListener('contextmenu', event => event.preventDefault());
+    document.onkeydown = function(e) {
+        if(e.keyCode == 123 || (e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 74 || e.keyCode == 67)) || (e.ctrlKey && e.keyCode == 85)) {
+            return false;
+        }
+    };
+    console.log("%cఆగండి! ఇక్కడ కోడ్ కాపీ చేయడం నిషేధించబడింది.", "color: red; font-size: 20px; font-weight: bold;");
 </script>
 </body>
 </html>
