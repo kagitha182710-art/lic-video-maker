@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Pro Editor - News Video Fixed</title>
+    <title>LIC Video Maker - Final</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; padding: 10px; }
         .container { max-width: 450px; margin: auto; background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
@@ -23,17 +23,17 @@
 <body>
 
 <div class="container">
-    <div id="status" class="status-box loading">డేటా లోడ్ అవుతోంది...</div>
+    <div id="status" class="status-box loading">వీడియో లోడ్ అవుతోంది...</div>
     <canvas id="canvas"></canvas>
     <div style="margin-top:15px;">
         <button id="startBtn" disabled>▶ రికార్డింగ్ ప్రారంభించండి</button>
         <button id="stopBtn" disabled>⏹ ఆపు</button>
         <br><br>
-        <a id="downloadBtn" href="#">📥 ఫైనల్ వీడియో డౌన్‌లోడ్</a>
+        <a id="downloadBtn" href="#">📥 వీడియో డౌన్‌లోడ్</a>
     </div>
 </div>
 
-<video id="vPlayer" style="display:none;" crossorigin="anonymous" playsinline></video>
+<video id="vPlayer" style="display:none;" playsinline></video>
 
 <script>
     const v = document.getElementById('vPlayer');
@@ -48,8 +48,9 @@
     let scrollImg = new Image();
     let recorder, chunks = [], scrollY = 0;
     
-    // ఇక్కడ మీరు అడిగినట్లుగా news.mp4 అని మార్చాను
-    let mainSrc = "news.mp4", outroSrc = "";
+    // డైరెక్ట్ గిట్ హబ్ లింక్ ఇచ్చేశాను
+    let mainSrc = "https://kagitha182710-art.github.io/lic-video-maker/news.mp4";
+    let outroSrc = "";
     
     let isOutro = false, audioCtx, dest, source;
     let isScrolling = false;
@@ -92,24 +93,17 @@
 
             await Promise.all(loadPromises);
 
-            status.className = "status-box success";
-            status.innerText = "రెడీ! రికార్డింగ్ ప్రారంభించండి.";
-            startBtn.disabled = false;
-            
-            // వీడియో ముందే లోడ్ చేసి పెట్టుకుంటున్నాం
             v.src = mainSrc;
             v.load(); 
             
         } catch (e) { 
             status.className = "status-box error";
             status.innerText = "డేటా లోడ్ ఎర్రర్!"; 
-            console.error(e);
         }
     }
 
     loadData();
 
-    // మొదటి ఫ్రేమ్ డ్రా చేయడం
     v.onloadeddata = () => {
         canvas.width = v.videoWidth;
         canvas.height = v.videoHeight;
@@ -119,6 +113,14 @@
             let fH = (fixedImg.height / fixedImg.width) * w;
             ctx.drawImage(fixedImg, 0, canvas.height - fH, w, fH);
         }
+        status.className = "status-box success";
+        status.innerText = "రెడీ! రికార్డింగ్ ప్రారంభించండి.";
+        startBtn.disabled = false;
+    };
+
+    v.onerror = () => {
+        status.className = "status-box error";
+        status.innerText = "వీడియో ఫైల్ సపోర్ట్ చేయడం లేదు. వాట్సాప్ ట్రిక్ వాడండి!";
     };
 
     function draw() {
@@ -143,9 +145,7 @@
         requestAnimationFrame(draw);
     }
 
-    v.addEventListener('play', () => {
-        requestAnimationFrame(draw);
-    });
+    v.addEventListener('play', () => { requestAnimationFrame(draw); });
 
     startBtn.onclick = async () => {
         try {
@@ -160,9 +160,7 @@
                 source.connect(dest);
                 source.connect(audioCtx.destination);
             }
-            if (audioCtx.state === 'suspended') {
-                await audioCtx.resume();
-            }
+            if (audioCtx.state === 'suspended') await audioCtx.resume();
 
             chunks = []; 
             scrollY = canvas.height - 100; 
@@ -178,11 +176,7 @@
                 ...dest.stream.getAudioTracks()
             ]);
 
-            recorder = new MediaRecorder(combinedStream, { 
-                mimeType: 'video/webm;codecs=vp8,opus', 
-                videoBitsPerSecond: 1500000 
-            });
-
+            recorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm;codecs=vp8,opus', videoBitsPerSecond: 1500000 });
             recorder.ondataavailable = e => { if(e.data.size > 0) chunks.push(e.data); };
             recorder.onstop = () => {
                 const blob = new Blob(chunks, { type: 'video/webm' });
@@ -197,11 +191,8 @@
             stopBtn.disabled = false;
 
         } catch (error) {
-            alert("రికార్డింగ్ ఫెయిల్ అయింది! కారణం: " + error.message);
-            console.error("Error details:", error);
+            alert("ఎర్రర్: " + error.message);
             startBtn.disabled = false;
-            status.className = "status-box error";
-            status.innerText = "మళ్లీ ప్రయత్నించండి.";
         }
     };
 
@@ -209,6 +200,7 @@
         if (!isOutro && outroSrc) {
             isOutro = true;
             v.src = outroSrc;
+            v.crossOrigin = "anonymous";
             v.play();
         } else {
             stopBtn.click();
