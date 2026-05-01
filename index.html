@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Video Maker - Audio Fixed</title>
+    <title>LIC Video Maker - 100% Audio Fixed</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; padding: 10px; }
         .container { max-width: 450px; margin: auto; background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
@@ -21,7 +21,7 @@
 <body>
 
 <div class="container">
-    <div id="status" class="status-box">సిద్ధంగా ఉన్నాము...</div>
+    <div id="status" class="status-box">ఆడియో సిస్టమ్ సిద్ధం చేస్తున్నాము...</div>
     <canvas id="canvas"></canvas>
     <div style="margin-top:15px;">
         <button id="startBtn" disabled>▶ రికార్డింగ్ ప్రారంభించండి</button>
@@ -31,7 +31,6 @@
     </div>
 </div>
 
-<!-- ఆడియో మిక్సింగ్ కోసం muted తీసేశాను -->
 <video id="vPlayer" style="display:none;" crossorigin="anonymous" playsinline></video>
 
 <script>
@@ -52,6 +51,9 @@
     let outroSrc = "";
     let isOutro = false;
 
+    // ఆడియో మిక్సింగ్ కోసం వేరియబుల్స్
+    let audioCtx, dest, source;
+
     const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vReHcj4b9ZAKFQxhMyXFZ_sQQsQHYlyhuPpxr1FmwGXsGRuFhcyUTcP3SeIsmLL04fXfS56feC3Hsoq/pub?gid=0&single=true&output=csv";
     const agentMobile = "9959041086";
 
@@ -60,7 +62,6 @@
             const r = await fetch(sheet + "&cb=" + Date.now());
             const text = await r.text();
             const rows = text.split("\n");
-            
             for (let i = 0; i < rows.length; i++) {
                 let cols = rows[i].split(",");
                 if (cols[0] && cols[0].trim().includes(agentMobile)) {
@@ -70,18 +71,13 @@
                     break;
                 }
             }
-
-            if (watermark.src && outroSrc) {
-                watermark.onload = () => {
-                    status.className = "status-box success";
-                    status.innerText = "9959041086 వివరాలు సిద్ధం!";
-                    startBtn.disabled = false;
-                    v.src = mainSrc;
-                };
-            }
-        } catch (e) {
-            status.innerText = "డేటా లోడ్ కాలేదు!";
-        }
+            watermark.onload = () => {
+                status.className = "status-box success";
+                status.innerText = "9959041086 వివరాలు రెడీ! రికార్డ్ చేయండి.";
+                startBtn.disabled = false;
+                v.src = mainSrc;
+            };
+        } catch (e) { status.innerText = "డేటా లోడ్ కాలేదు!"; }
     }
 
     loadData();
@@ -95,7 +91,6 @@
     function loop() {
         if (v.paused || v.ended) return;
         ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
-
         if (!isOutro && watermark.complete) {
             let w = canvas.width * 0.98;
             let h = (watermark.height / watermark.width) * w;
@@ -109,6 +104,15 @@
     }
 
     startBtn.onclick = () => {
+        // --- ఆడియో సెటప్ (యూజర్ క్లిక్ మీద మాత్రమే పని చేస్తుంది) ---
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            dest = audioCtx.createMediaStreamDestination();
+            source = audioCtx.createMediaElementSource(v);
+            source.connect(dest);
+            source.connect(audioCtx.destination);
+        }
+
         isOutro = false;
         yPos = canvas.height;
         isScrolling = true;
@@ -118,18 +122,14 @@
         v.play();
         loop();
 
-        // ఆడియోను క్యాప్చర్ చేయడం కోసం లాజిక్
+        // వీడియో మరియు ఆడియో స్ట్రీమ్స్ కలపడం
         const canvasStream = canvas.captureStream(30);
-        
-        // వీడియో ప్లేయర్ నుండి ఆడియో ట్రాక్ తీసుకోవడం
-        const audioStream = v.captureStream ? v.captureStream() : v.mozCaptureStream();
-        const audioTracks = audioStream.getAudioTracks();
-        
-        if (audioTracks.length > 0) {
-            canvasStream.addTrack(audioTracks[0]);
-        }
+        const finalStream = new MediaStream([
+            ...canvasStream.getVideoTracks(),
+            ...dest.stream.getAudioTracks()
+        ]);
 
-        recorder = new MediaRecorder(canvasStream, { 
+        recorder = new MediaRecorder(finalStream, { 
             mimeType: 'video/webm;codecs=vp8', 
             videoBitsPerSecond: 6000000 
         });
