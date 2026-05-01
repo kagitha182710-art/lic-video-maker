@@ -3,26 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Video Maker - Final Fix</title>
+    <title>LIC Video Maker - 9959041086</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background-color: #f0f2f5; padding: 20px; }
         .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         canvas { border: 3px solid #004aad; border-radius: 10px; background-color: #000; max-width: 100%; height: auto; margin-top: 15px; }
-        .status-box { padding: 10px; margin: 10px 0; font-weight: bold; border-radius: 5px; }
-        .loading { background: #fff3cd; color: #856404; }
-        .success { background: #d4edda; color: #155724; }
-        .error { background: #f8d7da; color: #721c24; }
+        .status-box { padding: 15px; margin: 10px 0; font-weight: bold; border-radius: 8px; font-size: 18px; }
+        .loading { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         button { padding: 12px 25px; margin: 10px 5px; cursor: pointer; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; }
         #startBtn { background: #004aad; color: white; }
         #stopBtn { background: #dc3545; color: white; }
         #downloadBtn { background: #28a745; color: white; display: none; }
-        button:disabled { background: #ccc !important; }
+        button:disabled { background: #ccc !important; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>LIC వీడియో ఎడిటర్ - మెయిన్ + అవుట్రో</h2>
+    <h2>LIC వీడియో ఎడిటర్ - ఏజెంట్ పోర్టల్</h2>
     <div id="status" class="status-box loading">గూగుల్ షీట్ నుండి డేటా తీసుకుంటున్నాము...</div>
 
     <canvas id="canvas"></canvas>
@@ -34,7 +34,6 @@
     </div>
 </div>
 
-<!-- వీడియో ఎలిమెంట్స్ -->
 <video id="mainVideo" src="video.mp4" style="display: none;" crossorigin="anonymous" playsinline></video>
 <video id="outroVideo" style="display: none;" crossorigin="anonymous" playsinline></video>
 
@@ -56,13 +55,16 @@
     let finalVideoUrl = null;
     let currentVideo = mainVideo;
 
-    // గూగుల్ షీట్ లింక్
+    // మీ గూగుల్ షీట్ లింక్ (CSV)
     const sheetCSVUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vReHcj4b9ZAKFQxhMyXFZ_sQQsQHYlyhuPpxr1FmwGXsGRuFhcyUTcP3SeIsmLL04fXfS56feC3Hsoq/pub?gid=0&single=true&output=csv";
+    
+    // మీరు కోరిన మొబైల్ నంబర్
     const loginMobile = "9959041086"; 
 
     async function loadAgentData() {
         try {
-            const response = await fetch(sheetCSVUrl);
+            // క్యాచ్ సమస్య లేకుండా టైమ్‌స్టాంప్ యాడ్ చేస్తున్నాను
+            const response = await fetch(sheetCSVUrl + "&t=" + new Date().getTime());
             const csvData = await response.text();
             const rows = csvData.split("\n");
             
@@ -71,10 +73,14 @@
 
             for (let i = 1; i < rows.length; i++) {
                 const cols = rows[i].split(",");
-                if (cols[0] && cols[0].trim() === loginMobile) {
-                    imageUrl = cols[1] ? cols[1].trim() : "";
-                    outroUrl = cols[2] ? cols[2].trim() : "";
-                    break;
+                if (cols[0]) {
+                    // నంబర్‌లోని స్పేస్‌లు, స్పెషల్ క్యారెక్టర్లు తీసివేసి మ్యాచ్ చేయడం
+                    const sheetMobile = cols[0].replace(/\D/g, '').trim();
+                    if (sheetMobile === loginMobile) {
+                        imageUrl = cols[1] ? cols[1].trim() : "";
+                        outroUrl = cols[2] ? cols[2].trim() : "";
+                        break;
+                    }
                 }
             }
 
@@ -85,22 +91,19 @@
                 outroVideo.src = outroUrl;
                 outroVideo.load();
 
-                // రెండు వీడియోలు మరియు ఇమేజ్ లోడ్ అయ్యే వరకు ఆగాలి
                 watermarkImage.onload = () => {
-                    outroVideo.oncanplaythrough = () => {
-                        statusDiv.className = "status-box success";
-                        statusDiv.innerText = "అన్నీ సిద్ధంగా ఉన్నాయి! రికార్డింగ్ ప్రారంభించవచ్చు.";
-                        startBtn.disabled = false;
-                        watermarkScrollY = canvas.height;
-                    };
+                    statusDiv.className = "status-box success";
+                    statusDiv.innerText = "ఏజెంట్ వివరాలు (9959041086) దొరికాయి! ప్లే చేయవచ్చు.";
+                    startBtn.disabled = false;
+                    watermarkScrollY = canvas.height;
                 };
             } else {
                 statusDiv.className = "status-box error";
-                statusDiv.innerText = "షీట్‌లో ఈ నంబర్ వివరాలు లేవు!";
+                statusDiv.innerText = "షీట్‌లో 9959041086 వివరాలు దొరకలేదు. Column A మరియు C చెక్ చేయండి.";
             }
         } catch (e) {
             statusDiv.className = "status-box error";
-            statusDiv.innerText = "లోడింగ్ ఎర్రర్!";
+            statusDiv.innerText = "నెట్‌వర్క్ ఎర్రర్! షీట్ పబ్లిష్ అయిందో లేదో చూడండి.";
         }
     }
 
@@ -123,7 +126,7 @@
             ctx.drawImage(watermarkImage, xPos, watermarkScrollY, wWidth, wHeight);
             
             if (isScrolling) {
-                watermarkScrollY -= 2;
+                watermarkScrollY -= 2.2;
                 if (watermarkScrollY + wHeight < 0) watermarkScrollY = canvas.height;
             }
         }
@@ -157,8 +160,6 @@
     mainVideo.onended = () => {
         isScrolling = false;
         currentVideo = outroVideo;
-        
-        // అవుట్రో ఆడియో కోసం కొత్త ట్రాక్ యాడ్ చేయడం కన్నా, వీడియోను ప్లే చేయడమే సులభం
         outroVideo.play();
         draw();
     };
@@ -176,7 +177,7 @@
     downloadBtn.onclick = () => {
         if (finalVideoUrl) {
             const a = document.createElement('a');
-            a.href = finalVideoUrl; a.download = 'LIC_Agent_Final_Video.webm'; a.click();
+            a.href = finalVideoUrl; a.download = 'LIC_Final_9959041086.webm'; a.click();
         }
     };
 </script>
