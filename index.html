@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Video Maker - Final Success</title>
+    <title>LIC Video Maker - With Border</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; padding: 10px; }
         .container { max-width: 450px; margin: auto; background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
-        canvas { border: 4px solid #004aad; border-radius: 10px; background: #000; width: 100%; height: auto; }
+        canvas { border: 2px solid #ccc; border-radius: 10px; background: #000; width: 100%; height: auto; }
         .status-box { padding: 10px; margin-bottom: 10px; border-radius: 5px; font-weight: bold; font-size: 14px; }
         .success { background: #d4edda; color: #155724; }
         .loading { background: #fff3cd; color: #856404; }
@@ -23,7 +23,7 @@
 <body>
 
 <div class="container">
-    <div id="status" class="status-box loading">వీడియో లోడ్ అవుతోంది, వేచి ఉండండి...</div>
+    <div id="status" class="status-box loading">బోర్డర్ మరియు వీడియో లోడ్ అవుతున్నాయి...</div>
     <canvas id="canvas"></canvas>
     <div style="margin-top:15px;">
         <button id="startBtn" disabled>▶ రికార్డింగ్ ప్రారంభించండి</button>
@@ -46,10 +46,11 @@
 
     let fixedImg = new Image();
     let scrollImg = new Image();
+    let borderImg = new Image(); // బోర్డర్ కోసం కొత్త ఇమేజ్ ఆబ్జెక్ట్
     let recorder, chunks = [], scrollY = 0;
     
-    // మీరు పంపిన డైరెక్ట్ లింక్ నే ఇక్కడ వాడాను, దానికి బ్రౌజర్ క్యాష్ రాకుండా టైమ్ యాడ్ చేశాను!
     let mainSrc = "https://kagitha182710-art.github.io/lic-video-maker/today.mp4?v=" + new Date().getTime();
+    let borderSrc = "TRASPARENT BACKROUND.png"; // మీ బోర్డర్ ఫైల్ పేరు
     let outroSrc = "";
     
     let isOutro = false, audioCtx, dest, source;
@@ -76,6 +77,13 @@
             }
 
             let loadPromises = [];
+            
+            // బోర్డర్ లోడ్ చేయడం
+            loadPromises.push(new Promise(res => {
+                borderImg.onload = res;
+                borderImg.src = borderSrc;
+            }));
+
             if (fSrc) {
                 loadPromises.push(new Promise(res => {
                     fixedImg.crossOrigin = "anonymous";
@@ -92,7 +100,6 @@
             }
 
             await Promise.all(loadPromises);
-
             v.src = mainSrc;
             v.load(); 
             
@@ -107,27 +114,18 @@
     v.onloadeddata = () => {
         canvas.width = v.videoWidth;
         canvas.height = v.videoHeight;
-        ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
-        let w = canvas.width;
-        if (fixedImg.src) {
-            let fH = (fixedImg.height / fixedImg.width) * w;
-            ctx.drawImage(fixedImg, 0, canvas.height - fH, w, fH);
-        }
+        drawFrame(); // మొదటి ఫ్రేమ్ డ్రా చేయడం
         status.className = "status-box success";
         status.innerText = "అంతా సిద్ధం! రికార్డింగ్ ప్రారంభించండి.";
         startBtn.disabled = false;
     };
 
-    v.onerror = () => {
-        status.className = "status-box error";
-        status.innerText = "వీడియో లోడ్ అవ్వలేదు, దయచేసి పేజీని హార్డ్ రిఫ్రెష్ చేయండి (Ctrl + Shift + R).";
-    };
-
-    function draw() {
-        if (v.paused || v.ended) return;
+    function drawFrame() {
         ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
         let w = canvas.width;
+        let h = canvas.height;
 
+        // స్క్రోలింగ్ ఇమేజ్
         if (scrollImg.src && isScrolling) {
             ctx.save();
             ctx.globalAlpha = 0.15; 
@@ -137,21 +135,31 @@
             ctx.restore();
         }
 
+        // ఫిక్స్‌డ్ బ్యానర్ (కింద)
         if (fixedImg.src) {
             let fH = (fixedImg.height / fixedImg.width) * w;
-            ctx.drawImage(fixedImg, 0, canvas.height - fH, w, fH);
+            ctx.drawImage(fixedImg, 0, h - fH, w, fH);
         }
 
-        requestAnimationFrame(draw);
+        // మీ బోర్డర్ ఇమేజ్ - ఇది అన్నిటికంటే పైన వస్తుంది
+        if (borderImg.src) {
+            ctx.drawImage(borderImg, 0, 0, w, h);
+        }
     }
 
-    v.addEventListener('play', () => { requestAnimationFrame(draw); });
+    function animate() {
+        if (v.paused || v.ended) return;
+        drawFrame();
+        requestAnimationFrame(animate);
+    }
+
+    v.addEventListener('play', animate);
 
     startBtn.onclick = async () => {
         try {
             startBtn.disabled = true;
             status.className = "status-box recording";
-            status.innerText = "రికార్డింగ్ అవుతోంది... (ఆపకండి)";
+            status.innerText = "రికార్డింగ్ అవుతోంది...";
 
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -184,14 +192,14 @@
                 downloadBtn.download = "LIC_Agent_Final_Video.webm";
                 downloadBtn.style.display = "inline-block";
                 status.className = "status-box success";
-                status.innerText = "రికార్డింగ్ పూర్తయింది! వీడియో డౌన్‌లోడ్ చేసుకోండి.";
+                status.innerText = "రికార్డింగ్ పూర్తయింది!";
             };
 
             recorder.start();
             stopBtn.disabled = false;
 
         } catch (error) {
-            alert("ఎర్రర్: " + error.message);
+            alert("Error: " + error.message);
             startBtn.disabled = false;
         }
     };
@@ -200,7 +208,6 @@
         if (!isOutro && outroSrc) {
             isOutro = true;
             v.src = outroSrc;
-            v.crossOrigin = "anonymous";
             v.play();
         } else {
             stopBtn.click();
