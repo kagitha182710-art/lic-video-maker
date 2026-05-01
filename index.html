@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Pro Editor - Perfect Sync</title>
+    <title>LIC Pro Editor - First Frame Fixed</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; padding: 10px; }
         .container { max-width: 450px; margin: auto; background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
@@ -45,7 +45,7 @@
     let fixedImg = new Image();
     let scrollImg = new Image();
     let recorder, chunks = [], scrollY = 0;
-    let mainSrc = "news.mp4", outroSrc = "";
+    let mainSrc = "video.mp4", outroSrc = "";
     let isOutro = false, audioCtx, dest, source;
     let isScrolling = false;
 
@@ -69,7 +69,6 @@
                 }
             }
 
-            // రెండు ఇమేజ్‌లు 100% లోడ్ అయ్యే వరకు ఆగేలా (Promise) సెట్ చేశాను
             let loadPromises = [];
             if (fSrc) {
                 loadPromises.push(new Promise(res => {
@@ -91,16 +90,27 @@
             status.className = "status-box success";
             status.innerText = "రెండు బ్యానర్లు పక్కాగా సిద్ధం! రికార్డింగ్ చేయండి.";
             startBtn.disabled = false;
+            
             v.src = mainSrc;
+            v.load(); // Video munde load avvadaniki
             
         } catch (e) { status.innerText = "డేటా ఎర్రర్!"; }
     }
 
     loadData();
 
-    v.onloadedmetadata = () => {
+    // Black screen badulu first frame munde draw cheyadaniki
+    v.onloadeddata = () => {
         canvas.width = v.videoWidth;
         canvas.height = v.videoHeight;
+        
+        ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+        
+        let w = canvas.width;
+        if (fixedImg.src) {
+            let fH = (fixedImg.height / fixedImg.width) * w;
+            ctx.drawImage(fixedImg, 0, canvas.height - fH, w, fH);
+        }
     };
 
     function draw() {
@@ -108,21 +118,18 @@
         ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
         let w = canvas.width;
 
-        // 1. స్క్రోలింగ్ బ్యానర్ (మొదటి సెకను నుండే కనిపిస్తుంది)
         if (scrollImg.src && isScrolling) {
             ctx.save();
-            ctx.globalAlpha = 0.15; // 15% ఒపాసిటీ
+            ctx.globalAlpha = 0.15; 
             let sH = (scrollImg.height / scrollImg.width) * w;
             ctx.drawImage(scrollImg, 0, scrollY, w, sH);
             
-            // నెమ్మదిగా స్క్రోల్ అవ్వడానికి స్పీడ్ (0.8) సెట్ చేశాను
             if (scrollY + sH > -50) { 
                 scrollY -= 0.8; 
             }
             ctx.restore();
         }
 
-        // 2. ఫిక్స్‌డ్ బ్యానర్ (కింద స్థిరంగా ఉంటుంది)
         if (fixedImg.src) {
             let fH = (fixedImg.height / fixedImg.width) * w;
             ctx.drawImage(fixedImg, 0, canvas.height - fH, w, fH);
@@ -131,7 +138,6 @@
         requestAnimationFrame(draw);
     }
 
-    // ప్లే అయినప్పుడు డ్రాయింగ్ ఆటోమేటిక్‌గా మొదలవ్వడానికి
     v.addEventListener('play', () => {
         requestAnimationFrame(draw);
     });
@@ -149,7 +155,6 @@
         }
 
         chunks = []; 
-        // బ్యానర్ వెంటనే పైకి కనిపించడానికి -100 పిక్సెల్స్ దగ్గర మొదలుపెడుతున్నాం
         scrollY = canvas.height - 100; 
         isScrolling = true;
         isOutro = false;
