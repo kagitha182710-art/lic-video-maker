@@ -3,32 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Video Maker - Premium Version</title>
+    <title>LIC Video Maker - 15 Video Gallery</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; padding: 10px; -webkit-user-select: none; user-select: none; }
         .container { max-width: 450px; margin: auto; background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+        
+        /* వీడియో సెలెక్టర్ గ్రిడ్ */
+        .video-grid { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 8px; 
+            margin-bottom: 20px; 
+            max-height: 200px; 
+            overflow-y: auto; 
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            background: #fdfdfd;
+        }
+        .v-btn { 
+            padding: 8px 5px; 
+            font-size: 11px; 
+            background: #eef2f7; 
+            border: 1px solid #004aad; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            font-weight: bold;
+            color: #004aad;
+            transition: 0.3s;
+        }
+        .v-btn.active { background: #004aad; color: #fff; }
+        
         canvas { border: 2px solid #ccc; border-radius: 10px; background: #fff; width: 100%; height: auto; display: block; margin: auto; }
         .status-box { padding: 10px; margin-bottom: 10px; border-radius: 5px; font-weight: bold; font-size: 14px; }
         .success { background: #d4edda; color: #155724; }
         .loading { background: #fff3cd; color: #856404; }
         .recording { background: #ffeeba; color: #d39e00; }
-        button { padding: 12px 24px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin: 5px; }
-        #startBtn { background: #004aad; color: #fff; }
-        #stopBtn { background: #d93025; color: #fff; }
-        #downloadBtn { background: #1e8e3e; color: #fff; display: none; text-decoration: none; padding: 12px 24px; border-radius: 8px; }
+        
+        .main-btns { margin-top:15px; display: flex; justify-content: center; gap: 10px; }
+        #startBtn { background: #004aad; color: #fff; padding: 12px 20px; border-radius: 8px; border:none; font-weight:bold; cursor:pointer;}
+        #stopBtn { background: #d93025; color: #fff; padding: 12px 20px; border-radius: 8px; border:none; font-weight:bold; cursor:pointer;}
+        #downloadBtn { background: #1e8e3e; color: #fff; display: none; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight:bold;}
         button:disabled { background: #ccc; cursor: not-allowed; }
     </style>
 </head>
 <body oncontextmenu="return false;">
 
 <div class="container">
-    <div id="status" class="status-box loading">ప్రీమియం ఫీచర్స్ లోడ్ అవుతున్నాయి...</div>
+    <h3 style="color:#004aad; margin-bottom:10px;">వీడియోను ఎంచుకోండి (1-15)</h3>
+    
+    <!-- 15 వీడియోల బటన్లు -->
+    <div class="video-grid" id="gallery">
+        <!-- ఇక్కడ మీరు మీ 15 వీడియోల పేర్లు మార్చుకోవచ్చు -->
+        <button class="v-btn active" onclick="changeVideo('today.mp4', this)">న్యూస్ యాంకర్</button>
+        <button class="v-btn" onclick="changeVideo('video2.mp4', this)">జీవన్ ఉమంగ్</button>
+        <button class="v-btn" onclick="changeVideo('video3.mp4', this)">జీవన్ ఆనంద్</button>
+        <button class="v-btn" onclick="changeVideo('video4.mp4', this)">రిటైర్మెంట్</button>
+        <button class="v-btn" onclick="changeVideo('video5.mp4', this)">పిల్లల చదువు</button>
+        <button class="v-btn" onclick="changeVideo('video6.mp4', this)">కన్యాదాన్</button>
+        <button class="v-btn" onclick="changeVideo('video7.mp4', this)">మనీ బ్యాక్</button>
+        <button class="v-btn" onclick="changeVideo('video8.mp4', this)">టర్మ్ ప్లాన్</button>
+        <button class="v-btn" onclick="changeVideo('video9.mp4', this)">ఆరోగ్య భీమా</button>
+        <button class="v-btn" onclick="changeVideo('video10.mp4', this)">హోలీ విషెస్</button>
+        <button class="v-btn" onclick="changeVideo('video11.mp4', this)">సంక్రాంతి</button>
+        <button class="v-btn" onclick="changeVideo('video12.mp4', this)">దీపావళి</button>
+        <button class="v-btn" onclick="changeVideo('video13.mp4', this)">న్యూ ఇయర్</button>
+        <button class="v-btn" onclick="changeVideo('video14.mp4', this)">బర్త్ డే</button>
+        <button class="v-btn" onclick="changeVideo('video15.mp4', this)">యానివర్సరీ</button>
+    </div>
+
+    <div id="status" class="status-box loading">వీడియో లోడ్ అవుతోంది...</div>
     <canvas id="canvas"></canvas>
-    <div style="margin-top:15px;">
-        <button id="startBtn" disabled>▶ రికార్డింగ్ ప్రారంభించండి</button>
+    
+    <div class="main-btns">
+        <button id="startBtn" disabled>▶ రికార్డింగ్ ప్రారంభించు</button>
         <button id="stopBtn" disabled>⏹ ఆపు</button>
-        <br><br>
-        <a id="downloadBtn" href="#">📥 ఫైనల్ వీడియో డౌన్‌లోడ్</a>
+    </div>
+    <div style="margin-top:15px;">
+        <a id="downloadBtn" href="#">📥 వీడియో డౌన్‌లోడ్ చేయండి</a>
     </div>
 </div>
 
@@ -52,7 +104,6 @@
     let nameX = 50, nameY = 80, mobX = 100, mobY = 200;
     let lastUpdate = 0;
 
-    let mainSrc = "https://kagitha182710-art.github.io/lic-video-maker/today.mp4?v=" + Date.now();
     let borderSrc = "TRASPARENT BACKROUND.png"; 
     let outroSrc = "";
     
@@ -60,6 +111,21 @@
 
     const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vReHcj4b9ZAKFQxhMyXFZ_sQQsQHYlyhuPpxr1FmwGXsGRuFhcyUTcP3SeIsmLL04fXfS56feC3Hsoq/pub?gid=0&single=true&output=csv";
     const agentMobile = "9959041086";
+
+    // వీడియో మార్చే ఫంక్షన్
+    function changeVideo(newSrc, btn) {
+        // బటన్ కలర్ మార్చడానికి
+        document.querySelectorAll('.v-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        startBtn.disabled = true;
+        downloadBtn.style.display = "none";
+        status.className = "status-box loading";
+        status.innerText = "లోడ్ అవుతోంది...";
+        
+        v.src = newSrc + "?v=" + Date.now();
+        v.load();
+    }
 
     async function loadData() {
         try {
@@ -87,9 +153,12 @@
             }
 
             await Promise.all(loadPromises);
-            v.src = mainSrc;
-            v.load(); 
-        } catch (e) { status.innerText = "డేటా ఎర్రర్!"; }
+            
+            // మొదటి వీడియో (Default) లోడ్ చేయడం
+            v.src = "today.mp4?v=" + Date.now();
+            v.load();
+            
+        } catch (e) { status.innerText = "డేటా లోడ్ అవ్వలేదు!"; }
     }
 
     loadData();
@@ -100,9 +169,9 @@
     };
 
     v.onloadeddata = () => {
-        render(); // వీడియో లోడ్ అవ్వగానే మొదటి ఫ్రేమ్ గీస్తుంది
+        render();
         status.className = "status-box success";
-        status.innerText = "ప్రీమియం వాటర్ మార్క్స్ రెడీ!";
+        status.innerText = "వీడియో సిద్ధంగా ఉంది!";
         startBtn.disabled = false;
     };
 
@@ -110,7 +179,6 @@
         let w = canvas.width;
         let h = canvas.height;
 
-        // 1. మెయిన్ వీడియో లేదా వైట్ బ్యాగ్రౌండ్ (లోడ్ అయ్యే వరకు)
         if (v.readyState >= 2) {
             ctx.drawImage(v, 0, 0, w, h);
         } else {
@@ -118,7 +186,6 @@
             ctx.fillRect(0, 0, w, h);
         }
 
-        // --- ఐకాన్స్‌తో కూడిన రాండమ్ వాటర్ మార్క్స్ ---
         if (!v.paused && !v.ended) {
             let now = Date.now();
             if (now - lastUpdate > 4000) { 
@@ -130,30 +197,27 @@
             }
             
             ctx.save();
-            ctx.globalAlpha = 0.5; // థిక్ గా కనిపించడానికి పెంచాను
+            ctx.globalAlpha = 0.5;
             ctx.shadowBlur = 4;
             ctx.shadowColor = "black";
             
-            // యూజర్ ఐకాన్ + పేరు (Bold)
             ctx.font = "bold 24px Segoe UI";
-            ctx.fillStyle = "#FFD700"; // గోల్డ్ కలర్ ఐకాన్ కోసం
+            ctx.fillStyle = "#FFD700";
             if(waterName) {
-                ctx.fillText("👤", nameX - 30, nameY); // ఐకాన్
+                ctx.fillText("👤", nameX - 30, nameY);
                 ctx.fillStyle = "white";
                 ctx.fillText(waterName, nameX, nameY); 
             }
             
-            // మొబైల్ ఐకాన్ + నంబర్ (Bold)
             ctx.font = "bold 22px Segoe UI";
-            ctx.fillStyle = "#25D366"; // వాట్సాప్ గ్రీన్ కలర్ ఐకాన్ కోసం
-            ctx.fillText("📞", mobX - 30, mobY); // ఐకాన్
+            ctx.fillStyle = "#25D366";
+            ctx.fillText("📞", mobX - 30, mobY);
             ctx.fillStyle = "white";
             ctx.fillText(agentMob, mobX, mobY);
             
             ctx.restore();
         }
 
-        // 3. కింద ఫిక్స్‌డ్ బ్యానర్ (ముందే కనిపిస్తుంది)
         if (fixedImg.complete) {
             let targetWidth = w * 0.95; 
             let fH = ((fixedImg.height / fixedImg.width) * targetWidth) * 0.85; 
@@ -162,7 +226,6 @@
             ctx.drawImage(fixedImg, xOffset, h - fH - yOffset, targetWidth, fH);
         }
 
-        // 4. బోర్డర్
         if (borderImg.complete) {
             ctx.drawImage(borderImg, 0, 0, w, h);
         }
@@ -180,7 +243,7 @@
         try {
             startBtn.disabled = true;
             status.className = "status-box recording";
-            status.innerText = "వీడియో తయారవుతోంది...";
+            status.innerText = "రికార్డింగ్ జరుగుతోంది...";
 
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -204,9 +267,9 @@
             recorder.onstop = () => {
                 const blob = new Blob(chunks, { type: 'video/webm' });
                 downloadBtn.href = URL.createObjectURL(blob);
-                downloadBtn.download = "LIC_Premium_Video.webm";
+                downloadBtn.download = "LIC_Video.webm";
                 downloadBtn.style.display = "inline-block";
-                status.innerText = "డౌన్‌లోడ్ చేసుకోండి!";
+                status.innerText = "వీడియో సిద్ధమైంది!";
             };
             recorder.start();
             stopBtn.disabled = false;
