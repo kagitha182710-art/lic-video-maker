@@ -3,169 +3,161 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Video Editor - 9959041086</title>
+    <title>LIC Video Final Solution</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; padding: 10px; }
-        .container { max-width: 500px; margin: auto; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        canvas { border: 3px solid #004aad; border-radius: 10px; background: #000; width: 100%; height: auto; margin-top: 10px; }
-        .status { padding: 10px; margin-bottom: 10px; font-weight: bold; border-radius: 5px; font-size: 14px; }
-        .loading { background: #fff3cd; color: #856404; }
-        .success { background: #d4edda; color: #155724; }
-        .error { background: #f8d7da; color: #721c24; }
-        button { padding: 12px 20px; margin: 5px; cursor: pointer; border: none; border-radius: 6px; font-size: 15px; font-weight: bold; }
-        #startBtn { background: #004aad; color: white; }
-        #stopBtn { background: #dc3545; color: white; }
-        #downloadBtn { background: #28a745; color: white; display: none; }
-        button:disabled { background: #ccc !important; }
+        body { font-family: sans-serif; text-align: center; background: #f4f4f9; padding: 10px; }
+        .container { max-width: 450px; margin: auto; background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+        canvas { border: 4px solid #004aad; border-radius: 10px; background: #000; width: 100%; height: auto; }
+        .status-box { padding: 10px; margin-bottom: 10px; border-radius: 5px; font-weight: bold; font-size: 14px; }
+        .info { background: #e7f3ff; color: #004aad; }
+        .error { background: #ffebeb; color: #d93025; }
+        .success { background: #e6ffed; color: #1e8e3e; }
+        .btns { margin-top: 15px; }
+        button { padding: 12px 24px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin: 5px; }
+        #startBtn { background: #004aad; color: #fff; }
+        #stopBtn { background: #d93025; color: #fff; }
+        #downloadBtn { background: #1e8e3e; color: #fff; display: none; text-decoration: none; padding: 12px 24px; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="status" class="status loading">గూగుల్ షీట్ డేటా కోసం ప్రయత్నిస్తున్నాము...</div>
+    <h3>LIC వీడియో ఎడిటర్</h3>
+    <div id="status" class="status-box info">డేటా కోసం వెతుకుతున్నాము...</div>
     <canvas id="canvas"></canvas>
-    <div class="controls">
+    <div class="btns">
         <button id="startBtn" disabled>▶ రికార్డింగ్ ప్రారంభించండి</button>
         <button id="stopBtn" disabled>⏹ ఆపు</button>
-        <button id="downloadBtn">📥 వీడియో డౌన్‌లోడ్</button>
+        <a id="downloadBtn" href="#">📥 వీడియో డౌన్‌లోడ్</a>
     </div>
 </div>
 
-<video id="videoPlayer" style="display: none;" crossorigin="anonymous" playsinline muted></video>
+<video id="vPlayer" style="display:none;" crossorigin="anonymous" playsinline muted></video>
 
 <script>
-    const player = document.getElementById('videoPlayer');
+    const v = document.getElementById('vPlayer');
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
-    const statusDiv = document.getElementById('status');
+    const status = document.getElementById('status');
     const startBtn = document.getElementById('startBtn');
     const stopBtn = document.getElementById('stopBtn');
     const downloadBtn = document.getElementById('downloadBtn');
 
-    let watermarkImg = new Image();
-    let mediaRecorder;
-    let recordedChunks = [];
+    let watermark = new Image();
+    let recorder;
+    let chunks = [];
     let isScrolling = false;
-    let scrollY = 0;
+    let yPos = 0;
     let mainSrc = "video.mp4";
     let outroSrc = "";
     let isOutro = false;
 
-    // మీ గూగుల్ షీట్ లింక్
-    const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vReHcj4b9ZAKFQxhMyXFZ_sQQsQHYlyhuPpxr1FmwGXsGRuFhcyUTcP3SeIsmLL04fXfS56feC3Hsoq/pub?gid=0&single=true&output=csv";
-    const targetMobile = "9959041086";
+    // మీ గూగుల్ షీట్ మరియు మొబైల్ నంబర్
+    const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vReHcj4b9ZAKFQxhMyXFZ_sQQsQHYlyhuPpxr1FmwGXsGRuFhcyUTcP3SeIsmLL04fXfS56feC3Hsoq/pub?gid=0&single=true&output=csv";
+    const agentMobile = "9959041086";
 
-    async function loadAgent() {
+    async function startApp() {
         try {
-            const resp = await fetch(sheetUrl + "&cache=" + Date.now());
-            const text = await resp.text();
+            const r = await fetch(sheet + "&cb=" + Date.now());
+            const text = await r.text();
             const rows = text.split("\n");
             
-            let imgLink = "";
+            let img = "", clip = "";
             for (let i = 1; i < rows.length; i++) {
-                const cols = rows[i].split(",");
-                if (cols[0] && cols[0].replace(/\D/g, '') === targetMobile) {
-                    imgLink = cols[1]?.trim();
-                    outroSrc = cols[2]?.trim();
+                let cols = rows[i].split(",");
+                if (cols[0] && cols[0].replace(/\D/g,'') === agentMobile) {
+                    img = cols[1]?.trim();
+                    clip = cols[2]?.trim();
                     break;
                 }
             }
 
-            if (imgLink && outroSrc) {
-                watermarkImg.crossOrigin = "anonymous";
-                watermarkImg.src = imgLink;
-                watermarkImg.onload = () => {
-                    statusDiv.className = "status success";
-                    statusDiv.innerText = "ఏజెంట్ వివరాలు దొరికాయి! రికార్డింగ్ ప్రారంభించవచ్చు.";
+            if (img && clip) {
+                outroSrc = clip;
+                watermark.crossOrigin = "anonymous";
+                watermark.src = img;
+                watermark.onload = () => {
+                    status.className = "status-box success";
+                    status.innerText = "ఏజెంట్ వివరాలు లోడ్ అయ్యాయి! రికార్డ్ చేయండి.";
                     startBtn.disabled = false;
-                    player.src = mainSrc;
-                    player.load();
+                    v.src = mainSrc;
+                    v.load();
                 };
             } else {
-                statusDiv.className = "status error";
-                statusDiv.innerText = "షీట్‌లో 9959041086 కి వివరాలు లేవు!";
+                status.className = "status-box error";
+                status.innerText = "షీట్‌లో డేటా దొరకలేదు!";
             }
         } catch (e) {
-            statusDiv.className = "status error";
-            statusDiv.innerText = "షీట్ లోడ్ అవ్వలేదు!";
+            status.className = "status-box error";
+            status.innerText = "కనెక్షన్ సమస్య!";
         }
     }
 
-    loadAgent();
+    startApp();
 
-    player.onloadedmetadata = () => {
-        canvas.width = player.videoWidth;
-        canvas.height = player.videoHeight;
-        scrollY = canvas.height;
+    v.onloadedmetadata = () => {
+        canvas.width = v.videoWidth;
+        canvas.height = v.videoHeight;
+        yPos = canvas.height;
     };
 
-    function draw() {
-        if (player.paused || player.ended) return;
-        ctx.drawImage(player, 0, 0, canvas.width, canvas.height);
+    function loop() {
+        if (v.paused || v.ended) return;
+        ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
 
-        if (!isOutro && watermarkImg.complete) {
+        if (!isOutro && watermark.complete) {
             let w = canvas.width * 0.98;
-            let h = (watermarkImg.height / watermarkImg.width) * w;
-            ctx.drawImage(watermarkImg, (canvas.width - w) / 2, scrollY, w, h);
+            let h = (watermark.height / watermark.width) * w;
+            ctx.drawImage(watermark, (canvas.width - w) / 2, yPos, w, h);
             if (isScrolling) {
-                scrollY -= 2;
-                if (scrollY + h < 0) scrollY = canvas.height;
+                yPos -= 2.5; // స్క్రోలింగ్ స్పీడ్
+                if (yPos + h < 0) yPos = canvas.height;
             }
         }
-        requestAnimationFrame(draw);
+        requestAnimationFrame(loop);
     }
 
     startBtn.onclick = () => {
         isOutro = false;
-        scrollY = canvas.height;
+        yPos = canvas.height;
         isScrolling = true;
-        recordedChunks = [];
-        
-        player.src = mainSrc;
-        player.muted = false;
-        player.play();
-        draw();
+        chunks = [];
+        v.src = mainSrc;
+        v.muted = false;
+        v.play();
+        loop();
 
         const stream = canvas.captureStream(30);
-        mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8', videoBitsPerSecond: 5000000 });
-        mediaRecorder.ondataavailable = e => recordedChunks.push(e.data);
-        mediaRecorder.onstop = () => {
-            const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8', videoBitsPerSecond: 6000000 });
+        recorder.ondataavailable = e => chunks.push(e.data);
+        recorder.onstop = () => {
+            const blob = new Blob(chunks, { type: 'video/webm' });
             downloadBtn.href = URL.createObjectURL(blob);
+            downloadBtn.download = "LIC_Agent_Video.webm";
             downloadBtn.style.display = "inline-block";
         };
-        mediaRecorder.start();
+        recorder.start();
         startBtn.disabled = true;
         stopBtn.disabled = false;
     };
 
-    player.onended = () => {
+    v.onended = () => {
         if (!isOutro) {
             isOutro = true;
             isScrolling = false;
-            player.src = outroSrc;
-            player.play().catch(() => {
-                // ఒకవేళ ఆటో-ప్లే బ్లాక్ అయితే రికార్డింగ్ ఆపేయాలి
-                stopBtn.click();
-            });
+            v.src = outroSrc;
+            v.play().catch(() => stopBtn.click());
         } else {
             stopBtn.click();
         }
     };
 
     stopBtn.onclick = () => {
-        player.pause();
-        if (mediaRecorder.state !== "inactive") mediaRecorder.stop();
+        v.pause();
+        if (recorder.state !== "inactive") recorder.stop();
         startBtn.disabled = false;
         stopBtn.disabled = true;
-    };
-
-    downloadBtn.onclick = (e) => {
-        const a = document.createElement('a');
-        a.href = e.target.href;
-        a.download = 'Agent_Video_Final.webm';
-        a.click();
-        return false;
     };
 </script>
 </body>
