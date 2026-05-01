@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Video Maker - Banner Adjusted</title>
+    <title>LIC Video Maker - Fixed Error</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; padding: 10px; }
         .container { max-width: 450px; margin: auto; background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
@@ -22,7 +22,7 @@
 <body>
 
 <div class="container">
-    <div id="status" class="status-box loading">సెట్టింగ్స్ అప్‌డేట్ చేస్తున్నాము...</div>
+    <div id="status" class="status-box loading">చిన్న ఎర్రర్ సరిచేయబడింది...</div>
     <canvas id="canvas"></canvas>
     <div style="margin-top:15px;">
         <button id="startBtn" disabled>▶ రికార్డింగ్ ప్రారంభించండి</button>
@@ -91,7 +91,7 @@
         canvas.height = v.videoHeight;
         render();
         status.className = "status-box success";
-        status.innerText = "బ్యానర్ అడ్జస్ట్ చేయబడింది! రికార్డింగ్ చేయండి.";
+        status.innerText = "అంతా సెట్ అయింది! ఇప్పుడు చూడండి.";
         startBtn.disabled = false;
     };
 
@@ -110,12 +110,11 @@
             ctx.restore();
         }
 
-        // --- కింద బ్యానర్ అడ్జస్ట్‌మెంట్ ---
         if (fixedImg.src) {
-            let targetWidth = w * 0.95; // 95% వెడల్పు
+            let targetWidth = w * 0.95; 
             let fH = (fixedImg.height / fixedImg.width) * targetWidth;
-            let xOffset = (w - targetWidth) / 2; // సెంటర్‌లో ఉండటానికి
-            let yOffset = 15; // బోర్డర్ నుండి పైకి జరపడానికి దూరం (పిక్సెల్స్)
+            let xOffset = (w - targetWidth) / 2; 
+            let yOffset = 18; // బోర్డర్ నుండి కొంచెం పైకి దూరం
             
             ctx.drawImage(fixedImg, xOffset, h - fH - yOffset, targetWidth, fH);
         }
@@ -150,7 +149,7 @@
             if (audioCtx.state === 'suspended') await audioCtx.resume();
 
             chunks = []; 
-            scrollY = h - 150; 
+            scrollY = canvas.height - 150; 
             isScrolling = true;
             isOutro = false;
             
@@ -165,7 +164,7 @@
             recorder.onstop = () => {
                 const blob = new Blob(chunks, { type: 'video/webm' });
                 downloadBtn.href = URL.createObjectURL(blob);
-                downloadBtn.download = "LIC_Perfect_Video.webm";
+                downloadBtn.download = "LIC_Agent_Video_Success.webm";
                 downloadBtn.style.display = "inline-block";
                 status.innerText = "వీడియో రెడీ!";
             };
