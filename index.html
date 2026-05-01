@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Video Maker - Clean Video Fix</title>
+    <title>LIC Video Maker - Final Success</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; padding: 10px; }
         .container { max-width: 450px; margin: auto; background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
@@ -23,7 +23,7 @@
 <body>
 
 <div class="container">
-    <div id="status" class="status-box loading">డేటా మరియు వీడియో లోడ్ అవుతున్నాయి...</div>
+    <div id="status" class="status-box loading">వీడియో లోడ్ అవుతోంది, వేచి ఉండండి...</div>
     <canvas id="canvas"></canvas>
     <div style="margin-top:15px;">
         <button id="startBtn" disabled>▶ రికార్డింగ్ ప్రారంభించండి</button>
@@ -33,7 +33,7 @@
     </div>
 </div>
 
-<video id="vPlayer" style="display:none;" playsinline></video>
+<video id="vPlayer" style="display:none;" playsinline crossorigin="anonymous"></video>
 
 <script>
     const v = document.getElementById('vPlayer');
@@ -48,8 +48,8 @@
     let scrollImg = new Image();
     let recorder, chunks = [], scrollY = 0;
     
-    // డైరెక్ట్ ఫైల్ పేరు మాత్రమే (ఎలాంటి ఎక్స్‌ట్రా లింక్స్ లేవు)
-    let mainSrc = "news.mp4";
+    // మీరు పంపిన డైరెక్ట్ లింక్ నే ఇక్కడ వాడాను, దానికి బ్రౌజర్ క్యాష్ రాకుండా టైమ్ యాడ్ చేశాను!
+    let mainSrc = "https://kagitha182710-art.github.io/lic-video-maker/today.mp4?v=" + new Date().getTime();
     let outroSrc = "";
     
     let isOutro = false, audioCtx, dest, source;
@@ -60,7 +60,6 @@
 
     async function loadData() {
         try {
-            // షీట్ లోడ్ అవ్వడానికి మాత్రమే క్యాష్ బస్టర్
             const r = await fetch(sheet + "&cb=" + Date.now());
             const text = await r.text();
             const rows = text.split("\n");
@@ -119,10 +118,9 @@
         startBtn.disabled = false;
     };
 
-    // వీడియో ఫెయిల్ అయితే వచ్చే మెసేజ్
     v.onerror = () => {
         status.className = "status-box error";
-        status.innerText = "మీ news.mp4 ఫార్మాట్ సపోర్ట్ చేయడం లేదు. దాన్ని కన్వర్ట్ చేయాల్సిందే!";
+        status.innerText = "వీడియో లోడ్ అవ్వలేదు, దయచేసి పేజీని హార్డ్ రిఫ్రెష్ చేయండి (Ctrl + Shift + R).";
     };
 
     function draw() {
