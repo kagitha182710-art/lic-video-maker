@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Pro Editor - Dual Banner & Audio Fix</title>
+    <title>LIC Pro Editor - Full Length Banner</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; padding: 10px; }
         .container { max-width: 450px; margin: auto; background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
         canvas { border: 4px solid #004aad; border-radius: 10px; background: #000; width: 100%; height: auto; }
         .status-box { padding: 10px; margin-bottom: 10px; border-radius: 5px; font-weight: bold; font-size: 14px; }
         .success { background: #d4edda; color: #155724; }
-        .error { background: #f8d7da; color: #721c24; }
         button { padding: 12px 24px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin: 5px; }
         #startBtn { background: #004aad; color: #fff; }
         #stopBtn { background: #d93025; color: #fff; }
@@ -21,7 +20,7 @@
 <body>
 
 <div class="container">
-    <div id="status" class="status-box">సిస్టమ్ సిద్ధం చేస్తున్నాము...</div>
+    <div id="status" class="status-box">వీడియో మొత్తం బ్యానర్ వచ్చేలా సెట్ చేశాము...</div>
     <canvas id="canvas"></canvas>
     <div style="margin-top:15px;">
         <button id="startBtn" disabled>▶ రికార్డింగ్ ప్రారంభించండి</button>
@@ -55,30 +54,24 @@
             const r = await fetch(sheet + "&cb=" + Date.now());
             const text = await r.text();
             const rows = text.split("\n");
-            
             for (let i = 0; i < rows.length; i++) {
                 let cols = rows[i].split(",");
                 if (cols[0] && cols[0].trim().includes(agentMobile)) {
                     fixedImg.crossOrigin = "anonymous";
-                    fixedImg.src = cols[1]?.trim(); // Column B
-                    
+                    fixedImg.src = cols[1]?.trim(); 
                     scrollImg.crossOrigin = "anonymous";
-                    scrollImg.src = cols[3]?.trim(); // Column D
-                    
-                    outroSrc = cols[2]?.trim(); // Column C
+                    scrollImg.src = cols[3]?.trim(); 
+                    outroSrc = cols[2]?.trim(); 
                     break;
                 }
             }
             fixedImg.onload = () => {
                 status.className = "status-box success";
-                status.innerText = "డ్యూయల్ బ్యానర్ సెటప్ రెడీ!";
+                status.innerText = "మొత్తం వీడియోకి బ్యానర్లు సెట్ అయ్యాయి!";
                 startBtn.disabled = false;
                 v.src = mainSrc;
             };
-        } catch (e) {
-            status.className = "status-box error";
-            status.innerText = "డేటా లోడ్ కాలేదు!";
-        }
+        } catch (e) { status.innerText = "డేటా లోడ్ కాలేదు!"; }
     }
 
     loadData();
@@ -92,34 +85,33 @@
     function loop() {
         if (v.paused || v.ended) return;
         
-        // 1. మెయిన్ వీడియో
+        // 1. వీడియో డ్రా చేయడం
         ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
 
-        if (!isOutro) {
-            let w = canvas.width;
+        // --- ఇక్కడ మార్పు చేశాను: isOutro కండిషన్ తీసేశాను, కాబట్టి బ్యానర్లు ఎప్పుడూ కనిపిస్తాయి ---
+        let w = canvas.width;
 
-            // 2. స్క్రోలింగ్ బ్యానర్ (15% Opacity)
-            if (scrollImg.complete && scrollImg.src !== "") {
-                ctx.save();
-                ctx.globalAlpha = 0.15;
-                let sH = (scrollImg.height / scrollImg.width) * w;
-                ctx.drawImage(scrollImg, 0, scrollY, w, sH);
-                scrollY -= 1.8;
-                if (scrollY + sH < 0) scrollY = canvas.height;
-                ctx.restore();
-            }
-
-            // 3. ఫిక్స్‌డ్ బ్యానర్ (స్థిరంగా ఉంటుంది)
-            if (fixedImg.complete && fixedImg.src !== "") {
-                let fH = (fixedImg.height / fixedImg.width) * w;
-                ctx.drawImage(fixedImg, 0, canvas.height - fH, w, fH);
-            }
+        // 2. స్క్రోలింగ్ బ్యానర్ (15% Opacity)
+        if (scrollImg.complete && scrollImg.src !== "") {
+            ctx.save();
+            ctx.globalAlpha = 0.15;
+            let sH = (scrollImg.height / scrollImg.width) * w;
+            ctx.drawImage(scrollImg, 0, scrollY, w, sH);
+            scrollY -= 1.8;
+            if (scrollY + sH < 0) scrollY = canvas.height;
+            ctx.restore();
         }
+
+        // 3. ఫిక్స్‌డ్ బ్యానర్ (కింద స్థిరంగా ఉంటుంది)
+        if (fixedImg.complete && fixedImg.src !== "") {
+            let fH = (fixedImg.height / fixedImg.width) * w;
+            ctx.drawImage(fixedImg, 0, canvas.height - fH, w, fH);
+        }
+        
         requestAnimationFrame(loop);
     }
 
     startBtn.onclick = () => {
-        // ఆడియో సెటప్
         if (!audioCtx) {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             dest = audioCtx.createMediaStreamDestination();
@@ -127,35 +119,20 @@
             source.connect(dest);
             source.connect(audioCtx.destination);
         }
-
         isOutro = false; chunks = []; scrollY = canvas.height;
-        v.src = mainSrc;
-        v.play();
-        loop();
-
-        const canvasStream = canvas.captureStream(30);
-        const finalStream = new MediaStream([
-            ...canvasStream.getVideoTracks(),
-            ...dest.stream.getAudioTracks()
-        ]);
-
-        // సైజు తగ్గించడానికి 1.5Mbps బిట్‌రేట్
-        recorder = new MediaRecorder(finalStream, { 
-            mimeType: 'video/webm;codecs=vp8,opus', 
-            videoBitsPerSecond: 1500000 
-        });
-
+        v.src = mainSrc; v.play(); loop();
+        const stream = canvas.captureStream(30);
+        const finalStream = new MediaStream([...stream.getVideoTracks(), ...dest.stream.getAudioTracks()]);
+        recorder = new MediaRecorder(finalStream, { mimeType: 'video/webm;codecs=vp8,opus', videoBitsPerSecond: 1500000 });
         recorder.ondataavailable = e => { if(e.data.size > 0) chunks.push(e.data); };
         recorder.onstop = () => {
             const blob = new Blob(chunks, { type: 'video/webm' });
             downloadBtn.href = URL.createObjectURL(blob);
-            downloadBtn.download = "LIC_Agent_Pro_Video.webm";
+            downloadBtn.download = "LIC_Full_Banner_Video.webm";
             downloadBtn.style.display = "inline-block";
         };
-
         recorder.start();
-        startBtn.disabled = true;
-        stopBtn.disabled = false;
+        startBtn.disabled = true; stopBtn.disabled = false;
     };
 
     v.onended = () => {
@@ -171,8 +148,7 @@
     stopBtn.onclick = () => {
         v.pause();
         if (recorder && recorder.state !== "inactive") recorder.stop();
-        startBtn.disabled = false;
-        stopBtn.disabled = true;
+        startBtn.disabled = false; stopBtn.disabled = true;
     };
 </script>
 </body>
