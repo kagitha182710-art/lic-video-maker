@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Video Maker - Low Size Fix</title>
+    <title>LIC Pro Editor - Dual Banner</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; padding: 10px; }
         .container { max-width: 450px; margin: auto; background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
@@ -20,13 +20,13 @@
 <body>
 
 <div class="container">
-    <div id="status" class="status-box">సైజు తగ్గించి సిద్ధం చేశాము...</div>
+    <div id="status" class="status-box">డ్యూయల్ బ్యానర్ సెటప్ చేస్తున్నాము...</div>
     <canvas id="canvas"></canvas>
     <div style="margin-top:15px;">
         <button id="startBtn" disabled>▶ రికార్డింగ్ ప్రారంభించండి</button>
         <button id="stopBtn" disabled>⏹ ఆపు</button>
         <br><br>
-        <a id="downloadBtn" href="#">📥 తక్కువ సైజు వీడియో డౌన్‌లోడ్</a>
+        <a id="downloadBtn" href="#">📥 వీడియో డౌన్‌లోడ్</a>
     </div>
 </div>
 
@@ -41,15 +41,10 @@
     const stopBtn = document.getElementById('stopBtn');
     const downloadBtn = document.getElementById('downloadBtn');
 
-    let watermark = new Image();
-    let recorder;
-    let chunks = [];
-    let isScrolling = false;
-    let yPos = 0;
-    let mainSrc = "video.mp4";
-    let outroSrc = "";
-    let isOutro = false;
-    let audioCtx, dest, source;
+    let fixedImg = new Image();
+    let scrollImg = new Image();
+    let recorder, chunks = [], scrollY = 0, mainSrc = "video.mp4", outroSrc = "";
+    let isOutro = false, audioCtx, dest, source;
 
     const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vReHcj4b9ZAKFQxhMyXFZ_sQQsQHYlyhuPpxr1FmwGXsGRuFhcyUTcP3SeIsmLL04fXfS56feC3Hsoq/pub?gid=0&single=true&output=csv";
     const agentMobile = "9959041086";
@@ -62,19 +57,23 @@
             for (let i = 0; i < rows.length; i++) {
                 let cols = rows[i].split(",");
                 if (cols[0] && cols[0].trim().includes(agentMobile)) {
-                    watermark.crossOrigin = "anonymous";
-                    watermark.src = cols[1]?.trim();
-                    outroSrc = cols[2]?.trim();
+                    fixedImg.crossOrigin = "anonymous";
+                    fixedImg.src = cols[1]?.trim(); // Column B
+                    
+                    scrollImg.crossOrigin = "anonymous";
+                    scrollImg.src = cols[3]?.trim(); // Column D (కొత్తది)
+                    
+                    outroSrc = cols[2]?.trim(); // Column C
                     break;
                 }
             }
-            watermark.onload = () => {
+            fixedImg.onload = () => {
                 status.className = "status-box success";
-                status.innerText = "ఏజెంట్ వివరాలు రెడీ!";
+                status.innerText = "డ్యూయల్ బ్యానర్ రెడీ!";
                 startBtn.disabled = false;
                 v.src = mainSrc;
             };
-        } catch (e) { status.innerText = "డేటా లోడ్ కాలేదు!"; }
+        } catch (e) { status.innerText = "డేటా ఎర్రర్!"; }
     }
 
     loadData();
@@ -82,19 +81,30 @@
     v.onloadedmetadata = () => {
         canvas.width = v.videoWidth;
         canvas.height = v.videoHeight;
-        yPos = canvas.height;
+        scrollY = canvas.height;
     };
 
     function loop() {
         if (v.paused || v.ended) return;
         ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
-        if (!isOutro && watermark.complete) {
-            let w = canvas.width * 0.98;
-            let h = (watermark.height / watermark.width) * w;
-            ctx.drawImage(watermark, (canvas.width - w) / 2, yPos, w, h);
-            if (isScrolling) {
-                yPos -= 2.2;
-                if (yPos + h < 0) yPos = canvas.height;
+
+        if (!isOutro) {
+            let w = canvas.width;
+            
+            // 1. స్క్రోలింగ్ బ్యానర్ (15% Opacity)
+            if (scrollImg.complete) {
+                ctx.globalAlpha = 0.15; // 15% పారదర్శకత
+                let sH = (scrollImg.height / scrollImg.width) * w;
+                ctx.drawImage(scrollImg, 0, scrollY, w, sH);
+                scrollY -= 1.5;
+                if (scrollY + sH < 0) scrollY = canvas.height;
+                ctx.globalAlpha = 1.0; // తిరిగి సాధారణ స్థితికి
+            }
+
+            // 2. ఫిక్స్‌డ్ బ్యానర్ (కింద స్థిరంగా ఉంటుంది)
+            if (fixedImg.complete) {
+                let fH = (fixedImg.height / fixedImg.width) * w;
+                ctx.drawImage(fixedImg, 0, canvas.height - fH, w, fH);
             }
         }
         requestAnimationFrame(loop);
@@ -108,56 +118,34 @@
             source.connect(dest);
             source.connect(audioCtx.destination);
         }
-
-        isOutro = false;
-        yPos = canvas.height;
-        isScrolling = true;
-        chunks = [];
-        v.src = mainSrc;
-        v.play();
-        loop();
-
-        const canvasStream = canvas.captureStream(30);
-        const combinedStream = new MediaStream([
-            ...canvasStream.getVideoTracks(),
-            ...dest.stream.getAudioTracks()
-        ]);
-
-        // ఇక్కడ బిట్‌రేట్ తగ్గించాము (1.5Mbps)
-        recorder = new MediaRecorder(combinedStream, { 
-            mimeType: 'video/webm;codecs=vp8,opus', 
-            videoBitsPerSecond: 1500000 
-        });
-
-        recorder.ondataavailable = e => { if(e.data.size > 0) chunks.push(e.data); };
+        isOutro = false; chunks = []; scrollY = canvas.height;
+        v.src = mainSrc; v.play(); loop();
+        const stream = canvas.captureStream(30);
+        const finalStream = new MediaStream([...stream.getVideoTracks(), ...dest.stream.getAudioTracks()]);
+        recorder = new MediaRecorder(finalStream, { mimeType: 'video/webm;codecs=vp8,opus', videoBitsPerSecond: 1500000 });
+        recorder.ondataavailable = e => chunks.push(e.data);
         recorder.onstop = () => {
             const blob = new Blob(chunks, { type: 'video/webm' });
             downloadBtn.href = URL.createObjectURL(blob);
-            downloadBtn.download = "LIC_Video_Small.webm";
+            downloadBtn.download = "LIC_Final_Pro.webm";
             downloadBtn.style.display = "inline-block";
         };
-
         recorder.start();
-        startBtn.disabled = true;
-        stopBtn.disabled = false;
+        startBtn.disabled = true; stopBtn.disabled = false;
     };
 
     v.onended = () => {
         if (!isOutro && outroSrc) {
             isOutro = true;
-            isScrolling = false;
             v.src = outroSrc;
             v.play();
-        } else {
-            stopBtn.click();
-        }
+        } else { stopBtn.click(); }
     };
 
     stopBtn.onclick = () => {
         v.pause();
         if (recorder && recorder.state !== "inactive") recorder.stop();
-        startBtn.disabled = false;
-        stopBtn.disabled = true;
+        startBtn.disabled = false; stopBtn.disabled = true;
     };
 </script>
 </body>
