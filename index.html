@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Video Maker - Cache Fixed</title>
+    <title>LIC Video Maker - Automatic Pro</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; padding: 10px; }
         .container { max-width: 450px; margin: auto; background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
@@ -17,23 +17,23 @@
         #startBtn { background: #004aad; color: #fff; }
         #stopBtn { background: #d93025; color: #fff; }
         #downloadBtn { background: #1e8e3e; color: #fff; display: none; text-decoration: none; padding: 12px 24px; border-radius: 8px; }
-        button:disabled { background: #ccc; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="status" class="status-box loading">వీడియో లోడ్ అవుతోంది...</div>
+    <div id="status" class="status-box loading">డేటా మరియు వీడియో లోడ్ అవుతున్నాయి...</div>
     <canvas id="canvas"></canvas>
     <div style="margin-top:15px;">
         <button id="startBtn" disabled>▶ రికార్డింగ్ ప్రారంభించండి</button>
         <button id="stopBtn" disabled>⏹ ఆపు</button>
         <br><br>
-        <a id="downloadBtn" href="#">📥 వీడియో డౌన్‌లోడ్</a>
+        <a id="downloadBtn" href="#">📥 ఫైనల్ వీడియో డౌన్‌లోడ్</a>
     </div>
 </div>
 
-<video id="vPlayer" style="display:none;" crossorigin="anonymous" playsinline></video>
+<video id="vPlayer" style="display:none;" playsinline crossorigin="anonymous"></video>
 
 <script>
     const v = document.getElementById('vPlayer');
@@ -48,8 +48,8 @@
     let scrollImg = new Image();
     let recorder, chunks = [], scrollY = 0;
     
-    // బ్రౌజర్ పాత ఫైల్ తీసుకోకుండా డేట్ & టైమ్ యాడ్ చేశాను (Cache Buster)
-    let mainSrc = "news.mp4?cb=" + new Date().getTime();
+    // పాత క్యాష్ రాకుండా టైమ్ యాడ్ చేశాను
+    let mainSrc = "news.mp4?time=" + new Date().getTime();
     let outroSrc = "";
     
     let isOutro = false, audioCtx, dest, source;
@@ -93,6 +93,7 @@
 
             await Promise.all(loadPromises);
 
+            // వీడియో డైరెక్ట్ గా గిట్ హబ్ నుండి ఆటోమేటిక్ గా తీసుకుంటుంది
             v.src = mainSrc;
             v.load(); 
             
@@ -114,13 +115,13 @@
             ctx.drawImage(fixedImg, 0, canvas.height - fH, w, fH);
         }
         status.className = "status-box success";
-        status.innerText = "రెడీ! రికార్డింగ్ ప్రారంభించండి.";
+        status.innerText = "అంతా సిద్ధం! రికార్డింగ్ ప్రారంభించండి.";
         startBtn.disabled = false;
     };
 
     v.onerror = () => {
         status.className = "status-box error";
-        status.innerText = "వీడియో ఫైల్ పేరు news.mp4 అని ఉందో లేదో చూడండి!";
+        status.innerText = "వీడియో ప్లే అవ్వడం లేదు. news.mp4 ఫైల్‌లో లోపం ఉంది.";
     };
 
     function draw() {
@@ -181,7 +182,7 @@
             recorder.onstop = () => {
                 const blob = new Blob(chunks, { type: 'video/webm' });
                 downloadBtn.href = URL.createObjectURL(blob);
-                downloadBtn.download = "LIC_Agent_Final.webm";
+                downloadBtn.download = "LIC_Agent_Final_Video.webm";
                 downloadBtn.style.display = "inline-block";
                 status.className = "status-box success";
                 status.innerText = "రికార్డింగ్ పూర్తయింది! వీడియో డౌన్‌లోడ్ చేసుకోండి.";
