@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Video Maker - 9959041086</title>
+    <title>LIC Final Video Fix - 9959041086</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; text-align: center; background-color: #f0f2f5; padding: 20px; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        canvas { border: 3px solid #004aad; border-radius: 10px; background-color: #000; max-width: 100%; height: auto; margin-top: 15px; }
-        .status-box { padding: 15px; margin: 10px 0; font-weight: bold; border-radius: 8px; font-size: 18px; }
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; padding: 20px; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        canvas { border: 4px solid #004aad; border-radius: 12px; background: #000; max-width: 100%; height: auto; }
+        .status-box { padding: 15px; margin: 15px 0; font-weight: bold; border-radius: 8px; font-size: 16px; }
         .loading { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
         .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        button { padding: 12px 25px; margin: 10px 5px; cursor: pointer; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; }
+        button { padding: 14px 28px; margin: 10px 5px; cursor: pointer; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; }
         #startBtn { background: #004aad; color: white; }
         #stopBtn { background: #dc3545; color: white; }
         #downloadBtn { background: #28a745; color: white; display: none; }
@@ -23,19 +23,19 @@
 
 <div class="container">
     <h2>LIC వీడియో ఎడిటర్ - ఏజెంట్ పోర్టల్</h2>
-    <div id="status" class="status-box loading">డేటా కోసం ప్రయత్నిస్తున్నాము...</div>
+    <div id="status" class="status-box loading">గూగుల్ షీట్ నుండి డేటా తీసుకుంటున్నాము...</div>
 
     <canvas id="canvas"></canvas>
 
     <div class="controls">
         <button id="startBtn" disabled>▶ రికార్డింగ్ ప్రారంభించండి</button>
         <button id="stopBtn" disabled>⏹ ఆపు</button>
-        <button id="downloadBtn">📥 వీడియో డౌన్‌లోడ్ చేయండి</button>
+        <button id="downloadBtn">📥 ఫైనల్ వీడియో డౌన్‌లోడ్ చేయండి</button>
     </div>
 </div>
 
-<video id="mainVideo" src="video.mp4" style="display: none;" crossorigin="anonymous" playsinline></video>
-<video id="outroVideo" style="display: none;" crossorigin="anonymous" playsinline></video>
+<video id="mainVideo" src="video.mp4" style="display: none;" crossorigin="anonymous" playsinline muted></video>
+<video id="outroVideo" style="display: none;" crossorigin="anonymous" playsinline muted></video>
 
 <script>
     const mainVideo = document.getElementById('mainVideo');
@@ -55,44 +55,30 @@
     let finalVideoUrl = null;
     let currentVideo = mainVideo;
 
-    // మీ గూగుల్ షీట్ లింక్ (ముఖ్య గమనిక: చివరన output=csv ఉండాలి)
     const sheetCSVUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vReHcj4b9ZAKFQxhMyXFZ_sQQsQHYlyhuPpxr1FmwGXsGRuFhcyUTcP3SeIsmLL04fXfS56feC3Hsoq/pub?gid=0&single=true&output=csv";
-    
-    // మీరు కోరిన మొబైల్ నంబర్
     const loginMobile = "9959041086"; 
 
-    async function loadAgentData() {
+    async function loadData() {
         try {
-            // బ్రౌజర్ బ్లాక్ చేయకుండా ఉండటానికి 'no-cache' మరియు రిక్వెస్ట్ మోడ్ మార్చాను
-            const response = await fetch(sheetCSVUrl, { cache: "no-store" });
-            const csvData = await response.text();
+            const response = await fetch(sheetCSVUrl + "&t=" + new Date().getTime());
+            const data = await response.text();
+            const rows = data.split("\n");
             
-            if (!csvData || csvData.includes("<!DOCTYPE html>")) {
-                throw new Error("CSV డేటా రాలేదు. షీట్ పబ్లిష్ సెట్టింగ్స్ చూడండి.");
-            }
-
-            const rows = csvData.split("\n");
-            let imageUrl = "";
-            let outroUrl = "";
+            let imageUrl = "", outroUrl = "";
 
             for (let i = 1; i < rows.length; i++) {
                 const cols = rows[i].split(",");
-                if (cols[0]) {
-                    const sheetMobile = cols[0].replace(/\D/g, '').trim();
-                    if (sheetMobile === loginMobile) {
-                        imageUrl = cols[1] ? cols[1].trim() : "";
-                        outroUrl = cols[2] ? cols[2].trim() : "";
-                        break;
-                    }
+                if (cols[0] && cols[0].replace(/\D/g, '') === loginMobile) {
+                    imageUrl = cols[1]?.trim();
+                    outroUrl = cols[2]?.trim();
+                    break;
                 }
             }
 
             if (imageUrl && outroUrl) {
-                // ఇమేజ్ సెటప్
                 watermarkImage.crossOrigin = "anonymous";
                 watermarkImage.src = imageUrl;
-
-                // అవుట్రో వీడియో సెటప్
+                
                 outroVideo.src = outroUrl;
                 outroVideo.load();
 
@@ -104,16 +90,15 @@
                 };
             } else {
                 statusDiv.className = "status-box error";
-                statusDiv.innerText = "షీట్‌లో ఈ నంబర్ వివరాలు లేవు! (నంబర్: " + loginMobile + ")";
+                statusDiv.innerText = "షీట్‌లో 9959041086 కి వివరాలు లేవు!";
             }
         } catch (e) {
             statusDiv.className = "status-box error";
-            statusDiv.innerText = "షీట్ లోడ్ అవ్వడం లేదు! మీ గూగుల్ షీట్ లో 'Publish to Web' మళ్ళీ ఒకసారి చేయండి.";
-            console.error(e);
+            statusDiv.innerText = "డేటా లోడింగ్ ఎర్రర్!";
         }
     }
 
-    loadAgentData();
+    loadData();
 
     mainVideo.onloadedmetadata = () => {
         canvas.width = mainVideo.videoWidth;
@@ -125,6 +110,7 @@
         if (currentVideo.paused || currentVideo.ended) return;
         ctx.drawImage(currentVideo, 0, 0, canvas.width, canvas.height);
 
+        // బ్యానర్ కేవలం మెయిన్ వీడియో మీద మాత్రమే
         if (currentVideo === mainVideo && watermarkImage.src) {
             let wWidth = canvas.width * 0.98;
             let wHeight = (watermarkImage.height / watermarkImage.width) * wWidth;
@@ -144,15 +130,23 @@
         downloadBtn.style.display = "none";
         isScrolling = true;
         currentVideo = mainVideo;
+        
+        mainVideo.muted = false;
+        outroVideo.muted = false;
+
         mainVideo.play();
         draw();
 
-        const canvasStream = canvas.captureStream(30);
-        const vStream = mainVideo.captureStream ? mainVideo.captureStream() : mainVideo.mozCaptureStream();
-        if (vStream.getAudioTracks().length > 0) canvasStream.addTrack(vStream.getAudioTracks()[0]);
+        // ఆడియో ప్రాబ్లం లేకుండా స్ట్రీమ్ ని పక్కాగా తీసుకోవడం
+        const stream = canvas.captureStream(30);
+        
+        mediaRecorder = new MediaRecorder(stream, { 
+            mimeType: 'video/webm;codecs=vp8', 
+            videoBitsPerSecond: 6000000 
+        });
 
-        mediaRecorder = new MediaRecorder(canvasStream, { mimeType: 'video/webm;codecs=vp8', videoBitsPerSecond: 6000000 });
-        mediaRecorder.ondataavailable = (e) => recordedChunks.push(e.data);
+        mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+        
         mediaRecorder.onstop = () => {
             const blob = new Blob(recordedChunks, { type: 'video/webm' });
             finalVideoUrl = URL.createObjectURL(blob);
@@ -160,30 +154,39 @@
         };
 
         mediaRecorder.start();
-        startBtn.disabled = true; stopBtn.disabled = false;
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
     };
 
+    // --- ఇక్కడ మార్పు చేశాను (మొదటి వీడియో అయిపోగానే రెండోది రావడానికి) ---
     mainVideo.onended = () => {
+        console.log("Main video ended. Starting Outro...");
         isScrolling = false;
         currentVideo = outroVideo;
-        outroVideo.play();
-        draw();
+        outroVideo.play().then(() => {
+            draw();
+        }).catch(err => console.error("Outro play error:", err));
     };
 
     outroVideo.onended = () => {
+        console.log("Outro video ended. Stopping recording...");
         if(!stopBtn.disabled) stopBtn.onclick();
     };
 
     stopBtn.onclick = () => {
-        mainVideo.pause(); outroVideo.pause();
-        if(mediaRecorder) mediaRecorder.stop();
-        startBtn.disabled = false; stopBtn.disabled = true;
+        mainVideo.pause();
+        outroVideo.pause();
+        if(mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
     };
 
     downloadBtn.onclick = () => {
         if (finalVideoUrl) {
             const a = document.createElement('a');
-            a.href = finalVideoUrl; a.download = 'LIC_9959041086_Video.webm'; a.click();
+            a.href = finalVideoUrl;
+            a.download = 'LIC_Agent_Video.webm';
+            a.click();
         }
     };
 </script>
