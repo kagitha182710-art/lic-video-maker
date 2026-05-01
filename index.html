@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Video Maker - Final</title>
+    <title>LIC Video Maker - Cache Fixed</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; padding: 10px; }
         .container { max-width: 450px; margin: auto; background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
@@ -33,7 +33,7 @@
     </div>
 </div>
 
-<video id="vPlayer" style="display:none;" playsinline></video>
+<video id="vPlayer" style="display:none;" crossorigin="anonymous" playsinline></video>
 
 <script>
     const v = document.getElementById('vPlayer');
@@ -48,8 +48,8 @@
     let scrollImg = new Image();
     let recorder, chunks = [], scrollY = 0;
     
-    // డైరెక్ట్ గిట్ హబ్ లింక్ ఇచ్చేశాను
-    let mainSrc = "https://kagitha182710-art.github.io/lic-video-maker/news.mp4";
+    // బ్రౌజర్ పాత ఫైల్ తీసుకోకుండా డేట్ & టైమ్ యాడ్ చేశాను (Cache Buster)
+    let mainSrc = "news.mp4?cb=" + new Date().getTime();
     let outroSrc = "";
     
     let isOutro = false, audioCtx, dest, source;
@@ -120,7 +120,7 @@
 
     v.onerror = () => {
         status.className = "status-box error";
-        status.innerText = "వీడియో ఫైల్ సపోర్ట్ చేయడం లేదు. వాట్సాప్ ట్రిక్ వాడండి!";
+        status.innerText = "వీడియో ఫైల్ పేరు news.mp4 అని ఉందో లేదో చూడండి!";
     };
 
     function draw() {
@@ -181,7 +181,7 @@
             recorder.onstop = () => {
                 const blob = new Blob(chunks, { type: 'video/webm' });
                 downloadBtn.href = URL.createObjectURL(blob);
-                downloadBtn.download = "LIC_Agent_News_Output.webm";
+                downloadBtn.download = "LIC_Agent_Final.webm";
                 downloadBtn.style.display = "inline-block";
                 status.className = "status-box success";
                 status.innerText = "రికార్డింగ్ పూర్తయింది! వీడియో డౌన్‌లోడ్ చేసుకోండి.";
