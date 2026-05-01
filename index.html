@@ -3,149 +3,162 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Video Editor - Auto Login Version</title>
+    <title>LIC Auto-Agent Video Editor</title>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin-top: 20px; background-color: #f4f4f9;}
-        canvas { border: 2px solid #333; border-radius: 8px; margin-top: 15px; background-color: #000; max-width: 100%; max-height: 60vh; object-fit: contain;}
-        .controls { margin-top: 20px; }
-        button { padding: 12px 20px; margin: 5px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; font-size: 16px; font-weight: bold;}
-        button:disabled { background: #ccc; cursor: not-allowed; }
-        #downloadBtn { background: #28a745; display: none; }
-        .user-info { color: #004aad; font-weight: bold; margin-bottom: 10px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; margin: 0; padding: 20px; background-color: #f0f2f5;}
+        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        canvas { border: 3px solid #004aad; border-radius: 10px; background-color: #000; max-width: 100%; height: auto; margin-top: 15px; }
+        .status-box { padding: 10px; margin: 10px 0; font-weight: bold; border-radius: 5px; }
+        .loading { background: #fff3cd; color: #856404; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        button { padding: 12px 25px; margin: 10px 5px; cursor: pointer; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; transition: 0.3s; }
+        #startBtn { background: #004aad; color: white; }
+        #startBtn:hover { background: #00337a; }
+        #stopBtn { background: #dc3545; color: white; }
+        #downloadBtn { background: #28a745; color: white; display: none; }
+        button:disabled { background: #ccc !important; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
-    <h2>LIC వీడియో ఎడిటర్</h2>
-    <div id="userDisplay" class="user-info"></div>
+<div class="container">
+    <h2>LIC వీడియో ఎడిటర్ - ఏజెంట్ పోర్టల్</h2>
+    <div id="status" class="status-box loading">గూగుల్ షీట్ నుండి డేటా లోడ్ అవుతోంది...</div>
 
-    <canvas id="canvas"></canvas><br>
+    <canvas id="canvas"></canvas>
 
     <div class="controls">
-        <button id="startBtn">▶ వీడియో రికార్డింగ్ ప్రారంభించండి</button>
-        <button id="stopBtn" disabled>⏹ రికార్డింగ్ ఆపివేయి</button>
+        <button id="startBtn" disabled>▶ రికార్డింగ్ ప్రారంభించండి</button>
+        <button id="stopBtn" disabled>⏹ ఆపు</button>
         <button id="downloadBtn">📥 వీడియో డౌన్‌లోడ్ చేయండి</button>
     </div>
+</div>
 
-    <!-- ఇక్కడ మీ మెయిన్ వీడియో ఉండాలి -->
-    <video id="video" src="video.mp4" style="display: none;" crossorigin="anonymous"></video>
+<video id="video" src="video.mp4" style="display: none;" crossorigin="anonymous"></video>
 
-    <script>
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d', { alpha: false });
-        const startBtn = document.getElementById('startBtn');
-        const stopBtn = document.getElementById('stopBtn');
-        const downloadBtn = document.getElementById('downloadBtn');
+<script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const statusDiv = document.getElementById('status');
 
-        let watermarkImage = new Image();
-        let mediaRecorder;
-        let recordedChunks = [];
-        let watermarkScrollY = 0;
-        let isScrolling = false;
-        let finalVideoUrl = null;
+    let watermarkImage = new Image();
+    let mediaRecorder;
+    let recordedChunks = [];
+    let watermarkScrollY = 0;
+    let isScrolling = false;
+    let finalVideoUrl = null;
 
-        // 1. యూజర్ లాగిన్ నంబర్ పొందడం (దీన్ని మీరు మీ లాగిన్ సిస్టమ్ నుండి పంపాలి)
-        // ఉదాహరణకు మనం '8341306663' అనుకుందాం
-        const userMobile = "8341306663"; 
-        document.getElementById('userDisplay').innerText = "లాగిన్ మొబైల్: " + userMobile;
+    // మీరు పంపిన గూగుల్ షీట్ లింక్ ఇక్కడ సెట్ చేశాను
+    const sheetCSVUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vReHcj4b9ZAKFQxhMyXFZ_sQQsQHYlyhuPpxr1FmwGXsGRuFhcyUTcP3SeIsmLL04fXfS56feC3Hsoq/pub?gid=0&single=true&output=csv";
+    
+    // టెస్ట్ కోసం ఒక నంబర్ ఇస్తున్నాను. మీ లాగిన్ సిస్టమ్ లో దీన్ని డైనమిక్ గా మార్చుకోవచ్చు.
+    const loginMobile = "8341306663"; 
 
-        // 2. మొబైల్ నంబర్ ఆధారంగా ఇమేజ్ లోడ్ చేయడం
-        // మీ ఇమేజెస్ అన్నీ ఒకే ఫోల్డర్ లో ఉండాలి. ఉదాహరణకు: images/8341306663.jpg
-        watermarkImage.src = "images/" + userMobile + ".jpg"; 
-        watermarkImage.crossOrigin = "anonymous";
-
-        watermarkImage.onload = () => {
-            console.log("యూజర్ ఇమేజ్ లోడ్ అయింది.");
-            watermarkScrollY = canvas.height;
-        };
-
-        watermarkImage.onerror = () => {
-            alert("క్షమించండి! మీ మొబైల్ నంబర్‌కు సంబంధించిన బ్యానర్ లభించలేదు.");
-        };
-
-        video.addEventListener('loadedmetadata', function() {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            watermarkScrollY = canvas.height;
-        });
-
-        function drawWatermark() {
-            if (watermarkImage.complete) {
-                let wWidth = canvas.width * 0.98; 
-                let wHeight = (watermarkImage.height / watermarkImage.width) * wWidth;
-                let xPos = (canvas.width - wWidth) / 2;
-
-                ctx.drawImage(watermarkImage, xPos, watermarkScrollY, wWidth, wHeight);
-                
-                if (isScrolling) {
-                    watermarkScrollY -= 2.0; 
-                    if (watermarkScrollY + wHeight < 0) {
-                        watermarkScrollY = canvas.height;
-                    }
+    async function loadAgentData() {
+        try {
+            const response = await fetch(sheetCSVUrl);
+            const csvData = await response.text();
+            const rows = csvData.split("\n");
+            
+            let imageUrl = "";
+            // CSV ని చదివి మొబైల్ నంబర్ కి తగ్గ ఇమేజ్ లింక్ ని వెతకడం
+            for (let i = 1; i < rows.length; i++) {
+                const cols = rows[i].split(",");
+                if (cols[0] && cols[0].trim() === loginMobile) {
+                    imageUrl = cols[1] ? cols[1].trim() : "";
+                    break;
                 }
             }
-        }
 
-        function draw() {
-            if (video.paused || video.ended) return;
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            drawWatermark();
-            requestAnimationFrame(draw);
+            if (imageUrl) {
+                watermarkImage.crossOrigin = "anonymous";
+                watermarkImage.src = imageUrl;
+                watermarkImage.onload = () => {
+                    statusDiv.className = "status-box success";
+                    statusDiv.innerText = "ఏజెంట్ బ్యానర్ సిద్ధంగా ఉంది! (మొబైల్: " + loginMobile + ")";
+                    startBtn.disabled = false;
+                    watermarkScrollY = canvas.height;
+                };
+            } else {
+                statusDiv.className = "status-box error";
+                statusDiv.innerText = "ఈ మొబైల్ నంబర్ (" + loginMobile + ") షీట్‌లో లేదు!";
+            }
+        } catch (e) {
+            statusDiv.className = "status-box error";
+            statusDiv.innerText = "షీట్ లోడ్ చేయడంలో ఎర్రర్ వచ్చింది!";
+            console.error(e);
         }
+    }
 
-        startBtn.addEventListener('click', () => {
-            recordedChunks = [];
-            if (finalVideoUrl) URL.revokeObjectURL(finalVideoUrl);
-            finalVideoUrl = null;
-            downloadBtn.style.display = "none";
+    loadAgentData();
+
+    video.onloadedmetadata = () => {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        watermarkScrollY = canvas.height;
+    };
+
+    function draw() {
+        if (video.paused || video.ended) return;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        if (watermarkImage.src) {
+            let wWidth = canvas.width * 0.98;
+            let wHeight = (watermarkImage.height / watermarkImage.width) * wWidth;
+            let xPos = (canvas.width - wWidth) / 2;
+
+            ctx.drawImage(watermarkImage, xPos, watermarkScrollY, wWidth, wHeight);
             
-            isScrolling = true;
-            video.play();
-            draw();
-
-            const canvasStream = canvas.captureStream(30);
-            let videoStream = video.captureStream ? video.captureStream() : video.mozCaptureStream();
-
-            if (videoStream && videoStream.getAudioTracks().length > 0) {
-                canvasStream.addTrack(videoStream.getAudioTracks()[0]);
+            if (isScrolling) {
+                watermarkScrollY -= 2.2; // స్మూత్ స్క్రోలింగ్ స్పీడ్
+                if (watermarkScrollY + wHeight < 0) watermarkScrollY = canvas.height;
             }
+        }
+        requestAnimationFrame(draw);
+    }
 
-            mediaRecorder = new MediaRecorder(canvasStream, { 
-                mimeType: 'video/webm;codecs=vp8',
-                videoBitsPerSecond: 5000000 
-            });
+    startBtn.onclick = () => {
+        recordedChunks = [];
+        if (finalVideoUrl) URL.revokeObjectURL(finalVideoUrl);
+        downloadBtn.style.display = "none";
+        isScrolling = true;
+        video.play();
+        draw();
 
-            mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
-            mediaRecorder.onstop = () => {
-                const blob = new Blob(recordedChunks, { type: 'video/webm' });
-                finalVideoUrl = URL.createObjectURL(blob);
-                downloadBtn.style.display = "inline-block"; 
-            };
+        const stream = canvas.captureStream(30);
+        const vStream = video.captureStream ? video.captureStream() : video.mozCaptureStream();
+        if (vStream.getAudioTracks().length > 0) stream.addTrack(vStream.getAudioTracks()[0]);
 
-            mediaRecorder.start();
-            startBtn.disabled = true;
-            stopBtn.disabled = false;
-        });
+        mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8', videoBitsPerSecond: 6000000 });
+        mediaRecorder.ondataavailable = (e) => recordedChunks.push(e.data);
+        mediaRecorder.onstop = () => {
+            const blob = new Blob(recordedChunks, { type: 'video/webm' });
+            finalVideoUrl = URL.createObjectURL(blob);
+            downloadBtn.style.display = "inline-block";
+        };
+        mediaRecorder.start();
+        startBtn.disabled = true; stopBtn.disabled = false;
+    };
 
-        stopBtn.addEventListener('click', () => {
-            video.pause();
-            isScrolling = false;
-            mediaRecorder.stop();
-            startBtn.disabled = false;
-            stopBtn.disabled = true;
-        });
+    stopBtn.onclick = () => {
+        video.pause(); isScrolling = false; mediaRecorder.stop();
+        startBtn.disabled = false; stopBtn.disabled = true;
+    };
 
-        downloadBtn.addEventListener('click', () => {
-            if (finalVideoUrl) {
-                const a = document.createElement('a');
-                a.href = finalVideoUrl;
-                a.download = 'LIC_Agent_Video.webm';
-                a.click();
-            }
-        });
+    downloadBtn.onclick = () => {
+        if (finalVideoUrl) {
+            const a = document.body.appendChild(document.createElement('a'));
+            a.href = finalVideoUrl; a.download = 'LIC_Agent_Ad.webm'; a.click();
+        }
+    };
 
-        video.addEventListener('ended', () => { if(!stopBtn.disabled) stopBtn.click(); });
-    </script>
+    video.onended = () => { if(!stopBtn.disabled) stopBtn.onclick(); };
+</script>
+
 </body>
 </html>
