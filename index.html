@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scrolling Banner Video Editor</title>
+    <title>Fixed Scrolling Watermark Editor</title>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; margin-top: 20px; background-color: #f4f4f9;}
         canvas { border: 2px solid #333; border-radius: 8px; margin-top: 15px; background-color: #000; max-width: 100%; max-height: 60vh; object-fit: contain;}
@@ -13,17 +13,21 @@
 </head>
 <body>
 
-    <h2>వెబ్ వీడియో ఎడిటర్ - స్క్రోలింగ్ బ్యానర్</h2>
+    <h2>LIC వీడియో ఎడిటర్ - స్క్రోలింగ్ వాటర్ మార్క్</h2>
     
-    <label><b>మీ బ్యానర్ ఇమేజ్ అప్లోడ్ చేయండి: </b></label>
-    <input type="file" id="imageUpload" accept="image/*" /><br>
+    <div style="margin-bottom: 15px;">
+        <label><b>వాటర్ మార్క్ (విజిటింగ్ కార్డ్) అప్లోడ్ చేయండి: </b></label>
+        <input type="file" id="imageUpload" accept="image/*" />
+    </div>
 
     <canvas id="canvas"></canvas><br>
 
-    <button id="startBtn">▶ ప్లే & రికార్డింగ్</button>
-    <button id="stopBtn" disabled>⏹ డౌన్‌లోడ్</button>
+    <div class="controls">
+        <button id="startBtn">▶ ప్లే & రికార్డింగ్ స్టార్ట్</button>
+        <button id="stopBtn" disabled>⏹ స్టాప్ & డౌన్‌లోడ్</button>
+    </div>
 
-    <!-- ఇక్కడ మీ వీడియో పేరు 'video.mp4' అని ఉండాలి -->
+    <!-- వీడియో ఫైల్ పేరు కచ్చితంగా video.mp4 అని ఉండాలి -->
     <video id="video" src="video.mp4" style="display: none;" crossorigin="anonymous"></video>
 
     <script>
@@ -36,15 +40,22 @@
         let watermarkImage = new Image();
         let mediaRecorder;
         let recordedChunks = [];
-        
-        // స్క్రోలింగ్ కోసం వాడే వేరియబుల్
-        let watermarkScrollY = null; 
+        let watermarkScrollY = 0;
+        let isScrolling = false;
 
+        // 1. ఇమేజ్ అప్లోడ్ చేయగానే లోడ్ చేయడం
         document.getElementById('imageUpload').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
-                reader.onload = (event) => watermarkImage.src = event.target.result;
+                reader.onload = (event) => {
+                    watermarkImage.src = event.target.result;
+                    watermarkImage.onload = () => {
+                        // ఇమేజ్ లోడ్ అవ్వగానే కాన్వాస్ అడుగున పొజిషన్ సెట్ చేయడం
+                        watermarkScrollY = canvas.height;
+                        renderStaticFrame(); // ప్రివ్యూ కోసం
+                    };
+                };
                 reader.readAsDataURL(file);
             }
         });
@@ -52,53 +63,52 @@
         video.addEventListener('loadedmetadata', function() {
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
+            watermarkScrollY = canvas.height;
         });
+
+        // రికార్డింగ్ స్టార్ట్ చేయకముందు కూడా ఇమేజ్ కనిపించడానికి
+        function renderStaticFrame() {
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            drawWatermark();
+        }
+
+        function drawWatermark() {
+            if (watermarkImage.src) {
+                // ఇమేజ్ క్వాలిటీ తగ్గకుండా దాని వెడల్పును బట్టి హైట్ లెక్కించడం
+                let wWidth = canvas.width * 0.3; // వీడియో వెడల్పులో 30% సైజు
+                let wHeight = (watermarkImage.height / watermarkImage.width) * wWidth;
+                let xPos = canvas.width - wWidth - 20; // కుడివైపు చివరన
+
+                ctx.globalAlpha = 1.0; // పూర్తి క్వాలిటీ కోసం
+                ctx.drawImage(watermarkImage, xPos, watermarkScrollY, wWidth, wHeight);
+                
+                if (isScrolling) {
+                    watermarkScrollY -= 1.5; // స్క్రోలింగ్ స్పీడ్ (మెల్లగా పైకి వెళ్తుంది)
+                    if (watermarkScrollY + wHeight < 0) {
+                        watermarkScrollY = canvas.height; // మళ్ళీ కింద నుండి రావడానికి
+                    }
+                }
+            }
+        }
 
         function draw() {
             if (video.paused || video.ended) return;
-            
-            // 1. ఒరిజినల్ వీడియోను డ్రా చేయడం
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            // 2. స్క్రోలింగ్ వాటర్ మార్క్ ను డ్రా చేయడం
-            if (watermarkImage.src && watermarkScrollY !== null) {
-                
-                // ఇమేజ్ ఒరిజినల్ క్వాలిటీ పాడవకుండా వీడియో సైజుకి తగ్గట్టు మార్చడం
-                let bannerWidth = canvas.width * 0.9; // వీడియో వెడల్పులో 90% ఆక్రమిస్తుంది
-                let bannerHeight = (watermarkImage.height / watermarkImage.width) * bannerWidth;
-                let xPosition = (canvas.width - bannerWidth) / 2; // కరెక్ట్ గా మధ్యలో (Center) వచ్చేలా
-
-                ctx.globalAlpha = 0.85; // 85% ట్రాన్స్పరెన్సీ (వెనుక వీడియో కొంచెం కనిపిస్తుంది)
-                
-                // ఇమేజ్ ని కాన్వాస్ పై గీయడం
-                ctx.drawImage(watermarkImage, xPosition, watermarkScrollY, bannerWidth, bannerHeight); 
-                
-                ctx.globalAlpha = 1.0; // తిరిగి నార్మల్ చేయడం
-
-                // 3. స్క్రోలింగ్ యానిమేషన్ లాజిక్ (పైకి కదలడం)
-                watermarkScrollY -= 2; // స్పీడ్. ఇక్కడ 2 బదులు 3 పెడితే ఇంకా ఫాస్ట్ గా వెళ్తుంది, 1 పెడితే స్లో గా వెళ్తుంది.
-
-                // ఇమేజ్ పూర్తిగా పైకి వెళ్ళిపోయిన తర్వాత, మళ్ళీ కింద నుండి స్టార్ట్ అవ్వడానికి
-                if (watermarkScrollY + bannerHeight < 0) {
-                    watermarkScrollY = canvas.height;
-                }
-            }
-            
+            drawWatermark();
             requestAnimationFrame(draw);
         }
 
         startBtn.addEventListener('click', () => {
+            if (!watermarkImage.src) {
+                alert("ముందుగా వాటర్ మార్క్ ఇమేజ్ సెలెక్ట్ చేయండి!");
+                return;
+            }
+            isScrolling = true;
             video.play();
-            
-            // రికార్డింగ్ స్టార్ట్ అవ్వగానే ఇమేజ్ వీడియో కింద భాగం నుండి స్టార్ట్ అవ్వాలి
-            watermarkScrollY = canvas.height; 
-            
-            draw(); 
-            
-            const canvasStream = canvas.captureStream(30); 
-            let videoStream;
-            if (video.captureStream) videoStream = video.captureStream();
-            else if (video.mozCaptureStream) videoStream = video.mozCaptureStream();
+            draw();
+
+            const canvasStream = canvas.captureStream(30);
+            let videoStream = video.captureStream ? video.captureStream() : video.mozCaptureStream();
 
             if (videoStream && videoStream.getAudioTracks().length > 0) {
                 canvasStream.addTrack(videoStream.getAudioTracks()[0]);
@@ -109,17 +119,24 @@
             mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
             mediaRecorder.start();
             
-            startBtn.disabled = true; stopBtn.disabled = false;
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
         });
 
         stopBtn.addEventListener('click', () => {
-            video.pause(); mediaRecorder.stop();
-            startBtn.disabled = false; stopBtn.disabled = true;
+            video.pause();
+            isScrolling = false;
+            mediaRecorder.stop();
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
 
             mediaRecorder.onstop = () => {
                 const blob = new Blob(recordedChunks, { type: 'video/webm' });
                 const url = URL.createObjectURL(blob);
-                const a = document.createElement('a'); a.href = url; a.download = 'scrolling-banner-video.webm'; a.click();
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'lic-scrolling-video.webm';
+                a.click();
             };
         });
 
