@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Pro Editor - Voice Fixed</title>
+    <title>LIC Pro Editor - 100% Voice Fix</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; padding: 10px; }
         .container { max-width: 450px; margin: auto; background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
@@ -20,7 +20,7 @@
 <body>
 
 <div class="container">
-    <div id="status" class="status-box">వాయిస్ రికార్డింగ్ సిద్ధం చేస్తున్నాము...</div>
+    <div id="status" class="status-box">వాయిస్ & వీడియో సెటప్ చేస్తున్నాము...</div>
     <canvas id="canvas"></canvas>
     <div style="margin-top:15px;">
         <button id="startBtn" disabled>▶ రికార్డింగ్ ప్రారంభించండి</button>
@@ -30,12 +30,10 @@
     </div>
 </div>
 
-<video id="mainVideo" src="video.mp4" style="display:none;" crossorigin="anonymous" playsinline></video>
-<video id="outroVideo" style="display:none;" crossorigin="anonymous" playsinline></video>
+<video id="vPlayer" style="display:none;" crossorigin="anonymous" playsinline></video>
 
 <script>
-    const mainVideo = document.getElementById('mainVideo');
-    const outroVideo = document.getElementById('outroVideo');
+    const v = document.getElementById('vPlayer');
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     const status = document.getElementById('status');
@@ -46,8 +44,8 @@
     let fixedImg = new Image();
     let scrollImg = new Image();
     let recorder, chunks = [], scrollY = 0;
-    let currentVideo = mainVideo;
-    let audioCtx, dest, sourceMain, sourceOutro;
+    let mainSrc = "video.mp4", outroSrc = "";
+    let isOutro = false, audioCtx, dest, source;
     let isScrolling = false;
 
     const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vReHcj4b9ZAKFQxhMyXFZ_sQQsQHYlyhuPpxr1FmwGXsGRuFhcyUTcP3SeIsmLL04fXfS56feC3Hsoq/pub?gid=0&single=true&output=csv";
@@ -65,65 +63,60 @@
                     fixedImg.src = cols[1]?.trim(); 
                     scrollImg.crossOrigin = "anonymous";
                     scrollImg.src = cols[3]?.trim(); 
-                    outroVideo.src = cols[2]?.trim(); 
+                    outroSrc = cols[2]?.trim(); 
                     break;
                 }
             }
             fixedImg.onload = () => {
                 status.className = "status-box success";
-                status.innerText = "వాయిస్ & బ్యానర్లు సిద్ధం!";
+                status.innerText = "అన్నీ సిద్ధం! రికార్డింగ్ మొదలుపెట్టండి.";
                 startBtn.disabled = false;
+                v.src = mainSrc;
             };
         } catch (e) { status.innerText = "డేటా లోడ్ కాలేదు!"; }
     }
 
     loadData();
 
-    mainVideo.onloadedmetadata = () => {
-        canvas.width = mainVideo.videoWidth;
-        canvas.height = mainVideo.videoHeight;
-        scrollY = canvas.height;
+    v.onloadedmetadata = () => {
+        canvas.width = v.videoWidth;
+        canvas.height = v.videoHeight;
+        if (!isScrolling) scrollY = canvas.height;
     };
 
     function draw() {
-        ctx.drawImage(currentVideo, 0, 0, canvas.width, canvas.height);
+        ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
         let w = canvas.width;
 
+        // 1. స్క్రోలింగ్ బ్యానర్ (ఒకేసారి నెమ్మదిగా)
         if (scrollImg.complete && scrollImg.src !== "" && isScrolling) {
             ctx.save();
             ctx.globalAlpha = 0.15;
             let sH = (scrollImg.height / scrollImg.width) * w;
             ctx.drawImage(scrollImg, 0, scrollY, w, sH);
-            if (scrollY + sH > -100) { scrollY -= 0.40; }
+            if (scrollY + sH > -50) { scrollY -= 0.40; } // స్పీడ్ కంట్రోల్
             ctx.restore();
         }
 
+        // 2. ఫిక్స్‌డ్ బ్యానర్ (కింద స్థిరంగా)
         if (fixedImg.complete && fixedImg.src !== "") {
             let fH = (fixedImg.height / fixedImg.width) * w;
             ctx.drawImage(fixedImg, 0, canvas.height - fH, w, fH);
         }
 
-        if (!currentVideo.paused && !currentVideo.ended) {
+        if (!v.paused && !v.ended) {
             requestAnimationFrame(draw);
         }
     }
 
     startBtn.onclick = async () => {
-        // ఆడియో ప్రాసెసింగ్ ప్రారంభం
+        // ఆడియో కనెక్షన్ ఒకే ప్లేయర్‌కి ఇస్తున్నాం
         if (!audioCtx) {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             dest = audioCtx.createMediaStreamDestination();
-            
-            // రెండు వీడియోల నుండి ఆడియో తీసుకోవడం
-            sourceMain = audioCtx.createMediaElementSource(mainVideo);
-            sourceOutro = audioCtx.createMediaElementSource(outroVideo);
-            
-            sourceMain.connect(dest);
-            sourceOutro.connect(dest);
-            
-            // ఇది లేకపోతే మనకి వినిపించదు
-            sourceMain.connect(audioCtx.destination);
-            sourceOutro.connect(audioCtx.destination);
+            source = audioCtx.createMediaElementSource(v);
+            source.connect(dest);
+            source.connect(audioCtx.destination);
         }
 
         if (audioCtx.state === 'suspended') {
@@ -133,16 +126,18 @@
         chunks = []; 
         scrollY = canvas.height;
         isScrolling = true;
-        currentVideo = mainVideo;
+        isOutro = false;
         
-        mainVideo.play();
+        v.src = mainSrc;
+        v.play();
         draw();
 
         const canvasStream = canvas.captureStream(30);
-        // వీడియో మరియు ఆడియో ట్రాక్స్‌ని పక్కాగా కలపడం
-        const combinedStream = new MediaStream();
-        canvasStream.getVideoTracks().forEach(track => combinedStream.addTrack(track));
-        dest.stream.getAudioTracks().forEach(track => combinedStream.addTrack(track));
+        // వీడియో + ఆడియో కలపడం
+        const combinedStream = new MediaStream([
+            ...canvasStream.getVideoTracks(),
+            ...dest.stream.getAudioTracks()
+        ]);
 
         recorder = new MediaRecorder(combinedStream, { 
             mimeType: 'video/webm;codecs=vp8,opus', 
@@ -153,7 +148,7 @@
         recorder.onstop = () => {
             const blob = new Blob(chunks, { type: 'video/webm' });
             downloadBtn.href = URL.createObjectURL(blob);
-            downloadBtn.download = "LIC_Voice_Video.webm";
+            downloadBtn.download = "LIC_Agent_Voice_Fixed.webm";
             downloadBtn.style.display = "inline-block";
         };
 
@@ -161,18 +156,20 @@
         startBtn.disabled = true; stopBtn.disabled = false;
     };
 
-    mainVideo.onended = () => {
-        currentVideo = outroVideo;
-        outroVideo.play();
-        draw();
-    };
-
-    outroVideo.onended = () => {
-        if(!stopBtn.disabled) stopBtn.onclick();
+    // వీడియో అయిపోగానే ఒకే ప్లేయర్‌లో లింక్ మార్చడం
+    v.onended = () => {
+        if (!isOutro && outroSrc) {
+            isOutro = true;
+            v.src = outroSrc;
+            v.play();
+            draw(); // డ్రాయింగ్ మళ్ళీ స్టార్ట్ అవ్వడానికి
+        } else {
+            stopBtn.click();
+        }
     };
 
     stopBtn.onclick = () => {
-        mainVideo.pause(); outroVideo.pause();
+        v.pause();
         isScrolling = false;
         if (recorder && recorder.state !== "inactive") recorder.stop();
         startBtn.disabled = false; stopBtn.disabled = true;
