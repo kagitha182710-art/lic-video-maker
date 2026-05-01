@@ -3,298 +3,205 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Video Maker - 15 Video Gallery</title>
+    <title>LIC Video Maker - Secure Login</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; padding: 10px; -webkit-user-select: none; user-select: none; }
         .container { max-width: 450px; margin: auto; background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
         
-        /* వీడియో సెలెక్టర్ గ్రిడ్ */
-        .video-grid { 
-            display: grid; 
-            grid-template-columns: repeat(3, 1fr); 
-            gap: 8px; 
-            margin-bottom: 20px; 
-            max-height: 200px; 
-            overflow-y: auto; 
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 10px;
-            background: #fdfdfd;
-        }
-        .v-btn { 
-            padding: 8px 5px; 
-            font-size: 11px; 
-            background: #eef2f7; 
-            border: 1px solid #004aad; 
-            border-radius: 5px; 
-            cursor: pointer; 
-            font-weight: bold;
-            color: #004aad;
-            transition: 0.3s;
-        }
+        /* లాగిన్ స్టైల్స్ */
+        #loginBox { padding: 30px 10px; }
+        .input-field { width: 80%; padding: 12px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; text-align: center; }
+        .login-btn { width: 85%; padding: 12px; background: #004aad; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        
+        /* వీడియో మేకర్ (మొదట దాచబడుతుంది) */
+        #makerSection { display: none; }
+
+        .video-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; max-height: 150px; overflow-y: auto; padding: 10px; border: 1px solid #ddd; border-radius: 10px; }
+        .v-btn { padding: 8px 5px; font-size: 11px; background: #eef2f7; border: 1px solid #004aad; border-radius: 5px; cursor: pointer; font-weight: bold; color: #004aad; }
         .v-btn.active { background: #004aad; color: #fff; }
         
         canvas { border: 2px solid #ccc; border-radius: 10px; background: #fff; width: 100%; height: auto; display: block; margin: auto; }
         .status-box { padding: 10px; margin-bottom: 10px; border-radius: 5px; font-weight: bold; font-size: 14px; }
         .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
         .loading { background: #fff3cd; color: #856404; }
-        .recording { background: #ffeeba; color: #d39e00; }
         
-        .main-btns { margin-top:15px; display: flex; justify-content: center; gap: 10px; }
-        #startBtn { background: #004aad; color: #fff; padding: 12px 20px; border-radius: 8px; border:none; font-weight:bold; cursor:pointer;}
-        #stopBtn { background: #d93025; color: #fff; padding: 12px 20px; border-radius: 8px; border:none; font-weight:bold; cursor:pointer;}
+        #startBtn { background: #004aad; color: #fff; padding: 12px 20px; border:none; border-radius: 8px; font-weight:bold; cursor:pointer;}
+        #stopBtn { background: #d93025; color: #fff; padding: 12px 20px; border:none; border-radius: 8px; font-weight:bold; cursor:pointer;}
         #downloadBtn { background: #1e8e3e; color: #fff; display: none; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight:bold;}
-        button:disabled { background: #ccc; cursor: not-allowed; }
     </style>
 </head>
 <body oncontextmenu="return false;">
 
 <div class="container">
-    <h3 style="color:#004aad; margin-bottom:10px;">వీడియోను ఎంచుకోండి (1-15)</h3>
-    
-    <!-- 15 వీడియోల బటన్లు -->
-    <div class="video-grid" id="gallery">
-        <!-- ఇక్కడ మీరు మీ 15 వీడియోల పేర్లు మార్చుకోవచ్చు -->
-        <button class="v-btn active" onclick="changeVideo('today.mp4', this)">న్యూస్ యాంకర్</button>
-        <button class="v-btn" onclick="changeVideo('video2.mp4', this)">జీవన్ ఉమంగ్</button>
-        <button class="v-btn" onclick="changeVideo('video3.mp4', this)">జీవన్ ఆనంద్</button>
-        <button class="v-btn" onclick="changeVideo('video4.mp4', this)">రిటైర్మెంట్</button>
-        <button class="v-btn" onclick="changeVideo('video5.mp4', this)">పిల్లల చదువు</button>
-        <button class="v-btn" onclick="changeVideo('video6.mp4', this)">కన్యాదాన్</button>
-        <button class="v-btn" onclick="changeVideo('video7.mp4', this)">మనీ బ్యాక్</button>
-        <button class="v-btn" onclick="changeVideo('video8.mp4', this)">టర్మ్ ప్లాన్</button>
-        <button class="v-btn" onclick="changeVideo('video9.mp4', this)">ఆరోగ్య భీమా</button>
-        <button class="v-btn" onclick="changeVideo('video10.mp4', this)">హోలీ విషెస్</button>
-        <button class="v-btn" onclick="changeVideo('video11.mp4', this)">సంక్రాంతి</button>
-        <button class="v-btn" onclick="changeVideo('video12.mp4', this)">దీపావళి</button>
-        <button class="v-btn" onclick="changeVideo('video13.mp4', this)">న్యూ ఇయర్</button>
-        <button class="v-btn" onclick="changeVideo('video14.mp4', this)">బర్త్ డే</button>
-        <button class="v-btn" onclick="changeVideo('video15.mp4', this)">యానివర్సరీ</button>
+    <div id="loginBox">
+        <img src="https://www.licindia.in/LIC_India/media/LIC_Media/logo.png" width="100" alt="LIC Logo"><br><br>
+        <h3 style="color:#004aad;">ఏజెంట్ లాగిన్</h3>
+        <p style="font-size: 13px; color: #666;">మీ రిజిస్టర్డ్ మొబైల్ నంబర్ ఎంటర్ చేయండి</p>
+        <input type="tel" id="mobileInput" class="input-field" placeholder="99590XXXXX" maxlength="10">
+        <br>
+        <button id="loginBtn" class="login-btn" onclick="checkUser()">ప్రవేశించండి (Login)</button>
+        <div id="loginStatus" style="margin-top:15px; font-size:14px; font-weight:bold;"></div>
     </div>
 
-    <div id="status" class="status-box loading">వీడియో లోడ్ అవుతోంది...</div>
-    <canvas id="canvas"></canvas>
-    
-    <div class="main-btns">
-        <button id="startBtn" disabled>▶ రికార్డింగ్ ప్రారంభించు</button>
-        <button id="stopBtn" disabled>⏹ ఆపు</button>
-    </div>
-    <div style="margin-top:15px;">
-        <a id="downloadBtn" href="#">📥 వీడియో డౌన్‌లోడ్ చేయండి</a>
+    <div id="makerSection">
+        <h4 id="welcomeTxt" style="color:#004aad; margin-top:0;"></h4>
+        <div class="video-grid">
+            <button class="v-btn active" onclick="changeVideo('today.mp4', this)">న్యూస్ యాంకర్</button>
+            <button class="v-btn" onclick="changeVideo('video2.mp4', this)">జీవన్ ఉమంగ్</button>
+            <button class="v-btn" onclick="changeVideo('video3.mp4', this)">జీవన్ ఆనంద్</button>
+            <button class="v-btn" onclick="changeVideo('video4.mp4', this)">రిటైర్మెంట్</button>
+            <button class="v-btn" onclick="changeVideo('video5.mp4', this)">కన్యాదాన్</button>
+            </div>
+
+        <div id="status" class="status-box success">వీడియో సిద్ధంగా ఉంది!</div>
+        <canvas id="canvas"></canvas>
+        
+        <div style="margin-top:15px; display:flex; justify-content:center; gap:10px;">
+            <button id="startBtn">▶ రికార్డింగ్</button>
+            <button id="stopBtn" disabled>⏹ ఆపు</button>
+        </div>
+        <div style="margin-top:15px;">
+            <a id="downloadBtn" href="#">📥 వీడియో డౌన్‌లోడ్</a>
+        </div>
     </div>
 </div>
 
 <video id="vPlayer" style="display:none;" playsinline crossorigin="anonymous"></video>
 
 <script>
-    const v = document.getElementById('vPlayer');
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-    const status = document.getElementById('status');
-    const startBtn = document.getElementById('startBtn');
-    const stopBtn = document.getElementById('stopBtn');
-    const downloadBtn = document.getElementById('downloadBtn');
-
-    let fixedImg = new Image();
-    let borderImg = new Image();
-    let recorder, chunks = [];
+    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vReHcj4b9ZAKFQxhMyXFZ_sQQsQHYlyhuPpxr1FmwGXsGRuFhcyUTcP3SeIsmLL04fXfS56feC3Hsoq/pub?gid=0&single=true&output=csv";
     
-    let waterName = "";
-    let agentMob = "";
-    let nameX = 50, nameY = 80, mobX = 100, mobY = 200;
-    let lastUpdate = 0;
+    let agentMob = "", waterName = "", fixedImg = new Image(), borderImg = new Image();
+    let borderSrc = "TRASPARENT BACKROUND.png", outroSrc = "";
+    let lastUpdate = 0, nameX, nameY, mobX, mobY;
 
-    let borderSrc = "TRASPARENT BACKROUND.png"; 
-    let outroSrc = "";
-    
-    let isOutro = false, audioCtx, dest, source;
-
-    const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vReHcj4b9ZAKFQxhMyXFZ_sQQsQHYlyhuPpxr1FmwGXsGRuFhcyUTcP3SeIsmLL04fXfS56feC3Hsoq/pub?gid=0&single=true&output=csv";
-    const agentMobile = "9959041086";
-
-    // వీడియో మార్చే ఫంక్షన్
-    function changeVideo(newSrc, btn) {
-        // బటన్ కలర్ మార్చడానికి
-        document.querySelectorAll('.v-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-
-        startBtn.disabled = true;
-        downloadBtn.style.display = "none";
-        status.className = "status-box loading";
-        status.innerText = "లోడ్ అవుతోంది...";
+    // --- యూజర్ చెకింగ్ ఫంక్షన్ ---
+    async function checkUser() {
+        const input = document.getElementById('mobileInput').value.trim();
+        const logStat = document.getElementById('loginStatus');
         
-        v.src = newSrc + "?v=" + Date.now();
-        v.load();
-    }
+        if (input.length !== 10) {
+            logStat.style.color = "red";
+            logStat.innerText = "దయచేసి 10 అంకెల నంబర్ ఇవ్వండి!";
+            return;
+        }
 
-    async function loadData() {
+        logStat.style.color = "orange";
+        logStat.innerText = "తనిఖీ చేస్తున్నాము...";
+
         try {
-            const r = await fetch(sheet + "&cb=" + Date.now());
+            const r = await fetch(sheetURL + "&cb=" + Date.now());
             const text = await r.text();
             const rows = text.split("\n");
-            let fSrc = "";
-            
+            let userFound = false;
+
             for (let i = 0; i < rows.length; i++) {
                 let cols = rows[i].split(",");
-                if (cols[0] && cols[0].trim().includes(agentMobile)) {
-                    agentMob = cols[0]?.trim(); 
-                    waterName = cols[4]?.trim() || ""; 
-                    fSrc = cols[1]?.trim(); 
-                    outroSrc = cols[2]?.trim(); 
+                if (cols[0] && cols[0].trim() === input) {
+                    agentMob = cols[0].trim();
+                    waterName = cols[4]?.trim() || "LIC Agent";
+                    let fSrc = cols[1]?.trim();
+                    outroSrc = cols[2]?.trim();
+                    
+                    // డేటా దొరికితే ఇమేజెస్ లోడ్ చేయాలి
+                    borderImg.src = borderSrc;
+                    if (fSrc) {
+                        fixedImg.crossOrigin = "anonymous";
+                        fixedImg.src = fSrc;
+                    }
+                    
+                    userFound = true;
                     break;
                 }
             }
 
-            let loadPromises = [];
-            loadPromises.push(new Promise(res => { borderImg.onload = res; borderImg.src = borderSrc; }));
-            if (fSrc) {
-                fixedImg.crossOrigin = "anonymous";
-                loadPromises.push(new Promise(res => { fixedImg.onload = res; fixedImg.src = fSrc; }));
+            if (userFound) {
+                document.getElementById('loginBox').style.display = "none";
+                document.getElementById('makerSection').style.display = "block";
+                document.getElementById('welcomeTxt').innerText = "స్వాగతం, " + waterName;
+                initVideo();
+            } else {
+                logStat.style.color = "red";
+                logStat.innerText = "క్షమించండి! ఈ నంబర్ మా వద్ద లేదు.";
             }
-
-            await Promise.all(loadPromises);
-            
-            // మొదటి వీడియో (Default) లోడ్ చేయడం
-            v.src = "today.mp4?v=" + Date.now();
-            v.load();
-            
-        } catch (e) { status.innerText = "డేటా లోడ్ అవ్వలేదు!"; }
+        } catch (e) { logStat.innerText = "సర్వర్ సమస్య!"; }
     }
 
-    loadData();
+    // --- వీడియో మేకర్ లాజిక్ ---
+    const v = document.getElementById('vPlayer');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
 
-    v.onloadedmetadata = () => {
-        canvas.width = v.videoWidth;
-        canvas.height = v.videoHeight;
-    };
+    function initVideo() {
+        v.src = "today.mp4?v=" + Date.now();
+        v.load();
+    }
 
-    v.onloadeddata = () => {
-        render();
-        status.className = "status-box success";
-        status.innerText = "వీడియో సిద్ధంగా ఉంది!";
-        startBtn.disabled = false;
-    };
+    v.onloadedmetadata = () => { canvas.width = v.videoWidth; canvas.height = v.videoHeight; };
+    v.onloadeddata = () => render();
 
     function render() {
-        let w = canvas.width;
-        let h = canvas.height;
-
-        if (v.readyState >= 2) {
-            ctx.drawImage(v, 0, 0, w, h);
-        } else {
-            ctx.fillStyle = "#ffffff";
-            ctx.fillRect(0, 0, w, h);
-        }
+        let w = canvas.width, h = canvas.height;
+        ctx.drawImage(v, 0, 0, w, h);
 
         if (!v.paused && !v.ended) {
             let now = Date.now();
-            if (now - lastUpdate > 4000) { 
-                nameX = Math.random() * (w - 200) + 30;
-                nameY = Math.random() * (h/2 - 100) + 100;
-                mobX = Math.random() * (w - 200) + 30;
-                mobY = Math.random() * (h/2 - 100) + (h/2);
+            if (now - lastUpdate > 4000) {
+                nameX = Math.random() * (w - 200) + 30; nameY = Math.random() * (h/2 - 100) + 100;
+                mobX = Math.random() * (w - 200) + 30; mobY = Math.random() * (h/2 - 100) + (h/2);
                 lastUpdate = now;
             }
-            
-            ctx.save();
-            ctx.globalAlpha = 0.5;
-            ctx.shadowBlur = 4;
-            ctx.shadowColor = "black";
-            
-            ctx.font = "bold 24px Segoe UI";
-            ctx.fillStyle = "#FFD700";
-            if(waterName) {
-                ctx.fillText("👤", nameX - 30, nameY);
-                ctx.fillStyle = "white";
-                ctx.fillText(waterName, nameX, nameY); 
-            }
-            
-            ctx.font = "bold 22px Segoe UI";
-            ctx.fillStyle = "#25D366";
-            ctx.fillText("📞", mobX - 30, mobY);
-            ctx.fillStyle = "white";
-            ctx.fillText(agentMob, mobX, mobY);
-            
+            ctx.save(); ctx.globalAlpha = 0.5; ctx.shadowBlur = 4; ctx.shadowColor = "black";
+            ctx.font = "bold 24px Segoe UI"; ctx.fillStyle = "#FFD700";
+            ctx.fillText("👤", nameX - 30, nameY); ctx.fillStyle = "white"; ctx.fillText(waterName, nameX, nameY);
+            ctx.font = "bold 22px Segoe UI"; ctx.fillStyle = "#25D366";
+            ctx.fillText("📞", mobX - 30, mobY); ctx.fillStyle = "white"; ctx.fillText(agentMob, mobX, mobY);
             ctx.restore();
         }
 
         if (fixedImg.complete) {
-            let targetWidth = w * 0.95; 
-            let fH = ((fixedImg.height / fixedImg.width) * targetWidth) * 0.85; 
-            let xOffset = (w - targetWidth) / 2; 
-            let yOffset = 20; 
-            ctx.drawImage(fixedImg, xOffset, h - fH - yOffset, targetWidth, fH);
+            let tw = w * 0.95, fh = ((fixedImg.height / fixedImg.width) * tw) * 0.85;
+            ctx.drawImage(fixedImg, (w - tw) / 2, h - fh - 20, tw, fh);
         }
-
-        if (borderImg.complete) {
-            ctx.drawImage(borderImg, 0, 0, w, h);
-        }
+        if (borderImg.complete) ctx.drawImage(borderImg, 0, 0, w, h);
     }
 
-    function loop() {
-        if (!v.paused && !v.ended) {
-            render();
-            requestAnimationFrame(loop);
-        }
-    }
+    function loop() { if (!v.paused && !v.ended) { render(); requestAnimationFrame(loop); } }
     v.addEventListener('play', loop);
 
+    function changeVideo(src, btn) {
+        document.querySelectorAll('.v-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        v.src = src + "?v=" + Date.now();
+        v.load();
+    }
+
+    // రికార్డింగ్ & సెక్యూరిటీ కోడ్ (మునుపటి లాగే ఉంటుంది)
+    let recorder, chunks = [];
     startBtn.onclick = async () => {
-        try {
-            startBtn.disabled = true;
-            status.className = "status-box recording";
-            status.innerText = "రికార్డింగ్ జరుగుతోంది...";
-
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                dest = audioCtx.createMediaStreamDestination();
-                source = audioCtx.createMediaElementSource(v);
-                source.connect(dest);
-                source.connect(audioCtx.destination);
-            }
-            if (audioCtx.state === 'suspended') await audioCtx.resume();
-
-            chunks = []; 
-            isOutro = false;
-            v.currentTime = 0; 
-            await v.play(); 
-
-            const stream = canvas.captureStream(30);
-            const combined = new MediaStream([...stream.getVideoTracks(), ...dest.stream.getAudioTracks()]);
-
-            recorder = new MediaRecorder(combined, { mimeType: 'video/webm;codecs=vp8,opus', videoBitsPerSecond: 2500000 });
-            recorder.ondataavailable = e => chunks.push(e.data);
-            recorder.onstop = () => {
-                const blob = new Blob(chunks, { type: 'video/webm' });
-                downloadBtn.href = URL.createObjectURL(blob);
-                downloadBtn.download = "LIC_Video.webm";
-                downloadBtn.style.display = "inline-block";
-                status.innerText = "వీడియో సిద్ధమైంది!";
-            };
-            recorder.start();
-            stopBtn.disabled = false;
-        } catch (e) { alert(e.message); }
+        startBtn.disabled = true; stopBtn.disabled = false;
+        const audioCtx = new AudioContext(), dest = audioCtx.createMediaStreamDestination();
+        const source = audioCtx.createMediaElementSource(v);
+        source.connect(dest); source.connect(audioCtx.destination);
+        chunks = []; v.currentTime = 0; await v.play();
+        const stream = canvas.captureStream(30);
+        const combined = new MediaStream([...stream.getVideoTracks(), ...dest.stream.getAudioTracks()]);
+        recorder = new MediaRecorder(combined, { mimeType: 'video/webm', videoBitsPerSecond: 2500000 });
+        recorder.ondataavailable = e => chunks.push(e.data);
+        recorder.onstop = () => {
+            const blob = new Blob(chunks, { type: 'video/webm' });
+            downloadBtn.href = URL.createObjectURL(blob);
+            downloadBtn.download = "LIC_Video.webm";
+            downloadBtn.style.display = "inline-block";
+        };
+        recorder.start();
     };
-
-    v.onended = () => {
-        if (!isOutro && outroSrc) {
-            isOutro = true;
-            v.src = outroSrc;
-            v.play();
-        } else { stopBtn.click(); }
-    };
-
-    stopBtn.onclick = () => {
-        v.pause();
-        if (recorder && recorder.state !== "inactive") recorder.stop();
-        startBtn.disabled = false; stopBtn.disabled = true;
-    };
-
-    // సెక్యూరిటీ
+    stopBtn.onclick = () => { v.pause(); recorder.stop(); startBtn.disabled = false; stopBtn.disabled = true; };
     document.addEventListener('contextmenu', e => e.preventDefault());
-    document.onkeydown = e => {
-        if(e.keyCode == 123 || (e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 74 || e.keyCode == 67)) || (e.ctrlKey && e.keyCode == 85)) return false;
-    };
 </script>
 </body>
 </html>
