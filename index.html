@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Video Maker - Pro Secured</title>
+    <title>LIC Video Maker - Dynamic Watermark</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; padding: 10px; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; padding: 10px; -webkit-user-select: none; user-select: none; }
         .container { max-width: 450px; margin: auto; background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
         canvas { border: 2px solid #ccc; border-radius: 10px; background: #000; width: 100%; height: auto; display: block; margin: auto; }
         .status-box { padding: 10px; margin-bottom: 10px; border-radius: 5px; font-weight: bold; font-size: 14px; }
@@ -22,7 +22,7 @@
 <body oncontextmenu="return false;">
 
 <div class="container">
-    <div id="status" class="status-box loading">సెక్యూర్ మోడ్‌లో లోడ్ అవుతోంది...</div>
+    <div id="status" class="status-box loading">డైనమిక్ వాటర్‌మార్క్ సెట్ చేస్తున్నాము...</div>
     <canvas id="canvas"></canvas>
     <div style="margin-top:15px;">
         <button id="startBtn" disabled>▶ రికార్డింగ్ ప్రారంభించండి</button>
@@ -44,16 +44,22 @@
     const downloadBtn = document.getElementById('downloadBtn');
 
     let fixedImg = new Image();
-    let scrollImg = new Image();
     let borderImg = new Image();
-    let recorder, chunks = [], scrollY = 0;
+    let recorder, chunks = [];
     
-    // మెయిన్ వీడియో సోర్స్
+    // ఏజెంట్ వివరాలు
+    let agentName = "";
+    let agentMob = "";
+    
+    // వాటర్‌మార్క్ పొజిషన్స్
+    let watermarkX = 50, watermarkY = 50;
+    let lastUpdate = 0;
+
     let mainSrc = "https://kagitha182710-art.github.io/lic-video-maker/today.mp4?v=" + Date.now();
     let borderSrc = "TRASPARENT BACKROUND.png"; 
     let outroSrc = "";
     
-    let isOutro = false, audioCtx, dest, source, isScrolling = false;
+    let isOutro = false, audioCtx, dest, source;
 
     const sheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vReHcj4b9ZAKFQxhMyXFZ_sQQsQHYlyhuPpxr1FmwGXsGRuFhcyUTcP3SeIsmLL04fXfS56feC3Hsoq/pub?gid=0&single=true&output=csv";
     const agentMobile = "9959041086";
@@ -63,13 +69,15 @@
             const r = await fetch(sheet + "&cb=" + Date.now());
             const text = await r.text();
             const rows = text.split("\n");
-            let fSrc = "", sSrc = "";
+            let fSrc = "";
+            
             for (let i = 0; i < rows.length; i++) {
                 let cols = rows[i].split(",");
                 if (cols[0] && cols[0].trim().includes(agentMobile)) {
+                    agentName = cols[4]?.trim() || "LIC Agent"; // 5వ కాలమ్ లో పేరు ఉందని భావిస్తున్నాను
+                    agentMob = cols[0]?.trim(); 
                     fSrc = cols[1]?.trim(); 
                     outroSrc = cols[2]?.trim(); 
-                    sSrc = cols[3]?.trim(); 
                     break;
                 }
             }
@@ -77,12 +85,11 @@
             let loadPromises = [];
             loadPromises.push(new Promise(res => { borderImg.onload = res; borderImg.src = borderSrc; }));
             if (fSrc) loadPromises.push(new Promise(res => { fixedImg.crossOrigin="anonymous"; fixedImg.onload = res; fixedImg.src = fSrc; }));
-            if (sSrc) loadPromises.push(new Promise(res => { scrollImg.crossOrigin="anonymous"; scrollImg.onload = res; scrollImg.src = sSrc; }));
 
             await Promise.all(loadPromises);
             v.src = mainSrc;
             v.load(); 
-        } catch (e) { status.innerText = "డేటా లోడ్ అవ్వలేదు!"; }
+        } catch (e) { status.innerText = "డేటా ఎర్రర్!"; }
     }
 
     loadData();
@@ -92,7 +99,7 @@
         canvas.height = v.videoHeight;
         render();
         status.className = "status-box success";
-        status.innerText = "ప్రొటెక్షన్ ఆన్! రికార్డింగ్ చేయండి.";
+        status.innerText = "డైనమిక్ ప్రొటెక్షన్ రెడీ!";
         startBtn.disabled = false;
     };
 
@@ -100,28 +107,38 @@
         let w = canvas.width;
         let h = canvas.height;
 
+        // 1. మెయిన్ వీడియో
         ctx.drawImage(v, 0, 0, w, h);
 
-        if (scrollImg.src && isScrolling) {
-            ctx.save();
-            ctx.globalAlpha = 0.20; 
-            let sH = (scrollImg.height / scrollImg.width) * w;
-            ctx.drawImage(scrollImg, 0, scrollY, w, sH);
+        // 2. డైనమిక్ వాటర్‌మార్క్ (రాండమ్ గా మారుతుంది)
+        if (!v.paused && !v.ended) {
+            let now = Date.now();
+            if (now - lastUpdate > 3000) { // ప్రతి 3 సెకన్లకు ఒకసారి ప్లేస్ మారుతుంది
+                watermarkX = Math.random() * (w - 150) + 50;
+                watermarkY = Math.random() * (h - 250) + 100;
+                lastUpdate = now;
+            }
             
-            // 55 సెకన్లకు సరిపోయేలా స్లో స్పీడ్
-            if (scrollY + sH > -50) { scrollY -= 0.4; } 
+            ctx.save();
+            ctx.globalAlpha = 0.4; // కొంచెం మసకగా
+            ctx.font = "bold 20px Segoe UI";
+            ctx.fillStyle = "white";
+            ctx.shadowBlur = 4;
+            ctx.shadowColor = "black";
+            ctx.fillText(agentName + " - " + agentMob, watermarkX, watermarkY);
             ctx.restore();
         }
 
+        // 3. కింద ఫిక్స్‌డ్ బ్యానర్ (అడ్జస్ట్ చేసిన వెర్షన్)
         if (fixedImg.src) {
             let targetWidth = w * 0.95; 
-            let fH = ((fixedImg.height / fixedImg.width) * targetWidth) * 0.85; // హైట్ తగ్గింపు
+            let fH = ((fixedImg.height / fixedImg.width) * targetWidth) * 0.85; 
             let xOffset = (w - targetWidth) / 2; 
             let yOffset = 20; 
-            
             ctx.drawImage(fixedImg, xOffset, h - fH - yOffset, targetWidth, fH);
         }
 
+        // 4. బోర్డర్ (అందరికంటే పైన)
         if (borderImg.complete) {
             ctx.drawImage(borderImg, 0, 0, w, h);
         }
@@ -140,7 +157,7 @@
         try {
             startBtn.disabled = true;
             status.className = "status-box recording";
-            status.innerText = "వీడియో రికార్డ్ అవుతోంది...";
+            status.innerText = "వీడియో తయారవుతోంది...";
 
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -152,10 +169,7 @@
             if (audioCtx.state === 'suspended') await audioCtx.resume();
 
             chunks = []; 
-            scrollY = canvas.height - 150; 
-            isScrolling = true;
             isOutro = false;
-            
             v.currentTime = 0; 
             await v.play(); 
 
@@ -167,9 +181,9 @@
             recorder.onstop = () => {
                 const blob = new Blob(chunks, { type: 'video/webm' });
                 downloadBtn.href = URL.createObjectURL(blob);
-                downloadBtn.download = "LIC_Final_Output.webm";
+                downloadBtn.download = "LIC_Secured_Video.webm";
                 downloadBtn.style.display = "inline-block";
-                status.innerText = "వీడియో సిద్ధమైంది!";
+                status.innerText = "డౌన్‌లోడ్ చేసుకోండి!";
             };
 
             recorder.start();
@@ -186,19 +200,16 @@
     };
 
     stopBtn.onclick = () => {
-        v.pause(); isScrolling = false;
+        v.pause();
         if (recorder && recorder.state !== "inactive") recorder.stop();
         startBtn.disabled = false; stopBtn.disabled = true;
     };
 
-    // --- సెక్యూరిటీ కోడ్ (Code Protection) ---
-    document.addEventListener('contextmenu', event => event.preventDefault());
-    document.onkeydown = function(e) {
-        if(e.keyCode == 123 || (e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 74 || e.keyCode == 67)) || (e.ctrlKey && e.keyCode == 85)) {
-            return false;
-        }
+    // సెక్యూరిటీ
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    document.onkeydown = e => {
+        if(e.keyCode == 123 || (e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 74 || e.keyCode == 67)) || (e.ctrlKey && e.keyCode == 85)) return false;
     };
-    console.log("%cఆగండి! ఇక్కడ కోడ్ కాపీ చేయడం నిషేధించబడింది.", "color: red; font-size: 20px; font-weight: bold;");
 </script>
 </body>
 </html>
