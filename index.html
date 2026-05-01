@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Video Maker - Fixed Error</title>
+    <title>LIC Video Maker - Fine Tuned</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; padding: 10px; }
         .container { max-width: 450px; margin: auto; background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
@@ -22,7 +22,7 @@
 <body>
 
 <div class="container">
-    <div id="status" class="status-box loading">చిన్న ఎర్రర్ సరిచేయబడింది...</div>
+    <div id="status" class="status-box loading">వేగం మరియు ఎత్తు సర్దుబాటు చేస్తున్నాము...</div>
     <canvas id="canvas"></canvas>
     <div style="margin-top:15px;">
         <button id="startBtn" disabled>▶ రికార్డింగ్ ప్రారంభించండి</button>
@@ -91,7 +91,7 @@
         canvas.height = v.videoHeight;
         render();
         status.className = "status-box success";
-        status.innerText = "అంతా సెట్ అయింది! ఇప్పుడు చూడండి.";
+        status.innerText = "వేగం తగ్గించబడింది! ఇప్పుడు రికార్డింగ్ చేయండి.";
         startBtn.disabled = false;
     };
 
@@ -101,20 +101,25 @@
 
         ctx.drawImage(v, 0, 0, w, h);
 
+        // --- స్క్రోలింగ్ స్పీడ్ సెట్టింగ్ ---
         if (scrollImg.src && isScrolling) {
             ctx.save();
             ctx.globalAlpha = 0.20; 
             let sH = (scrollImg.height / scrollImg.width) * w;
             ctx.drawImage(scrollImg, 0, scrollY, w, sH);
-            if (scrollY + sH > -50) { scrollY -= 1.2; }
+            
+            // 55 సెకన్ల వరకు రావాలి కాబట్టి వేగాన్ని 0.4 కు తగ్గించాను (చాలా నెమ్మదిగా వెళ్తుంది)
+            if (scrollY + sH > -50) { scrollY -= 0.4; } 
             ctx.restore();
         }
 
+        // --- కింద ఫిక్స్‌డ్ బ్యానర్ అడ్జస్ట్‌మెంట్ ---
         if (fixedImg.src) {
             let targetWidth = w * 0.95; 
-            let fH = (fixedImg.height / fixedImg.width) * targetWidth;
+            // హైట్ తగ్గించడానికి ఇక్కడ చిన్న మార్పు చేశాను (0.85 తో మల్టిప్లై చేశాను)
+            let fH = ((fixedImg.height / fixedImg.width) * targetWidth) * 0.85; 
             let xOffset = (w - targetWidth) / 2; 
-            let yOffset = 18; // బోర్డర్ నుండి కొంచెం పైకి దూరం
+            let yOffset = 20; 
             
             ctx.drawImage(fixedImg, xOffset, h - fH - yOffset, targetWidth, fH);
         }
@@ -137,7 +142,7 @@
         try {
             startBtn.disabled = true;
             status.className = "status-box recording";
-            status.innerText = "వీడియో రికార్డ్ అవుతోంది...";
+            status.innerText = "నిదానంగా రికార్డ్ అవుతోంది...";
 
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -164,9 +169,9 @@
             recorder.onstop = () => {
                 const blob = new Blob(chunks, { type: 'video/webm' });
                 downloadBtn.href = URL.createObjectURL(blob);
-                downloadBtn.download = "LIC_Agent_Video_Success.webm";
+                downloadBtn.download = "LIC_Slow_Smooth_Video.webm";
                 downloadBtn.style.display = "inline-block";
-                status.innerText = "వీడియో రెడీ!";
+                status.innerText = "వీడియో సిద్ధమైంది!";
             };
 
             recorder.start();
