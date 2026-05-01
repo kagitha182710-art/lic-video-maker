@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Final Video Maker</title>
+    <title>LIC Final Video Maker - Fixed Outro</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background-color: #f0f2f5; padding: 20px; }
         .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
@@ -23,7 +23,7 @@
 
 <div class="container">
     <h2>LIC వీడియో ఎడిటర్ - మెయిన్ + 8సె క్లిప్</h2>
-    <div id="status" class="status-box loading">గూగుల్ షీట్ నుండి డేటా తీసుకుంటున్నాము...</div>
+    <div id="status" class="status-box loading">గూగుల్ షీట్ నుండి డేటా లోడ్ అవుతోంది...</div>
 
     <canvas id="canvas"></canvas>
 
@@ -34,8 +34,8 @@
     </div>
 </div>
 
-<video id="mainVideo" src="video.mp4" style="display: none;" crossorigin="anonymous" playsinline></video>
-<video id="outroVideo" style="display: none;" crossorigin="anonymous" playsinline></video>
+<video id="mainVideo" src="video.mp4" style="display: none;" crossorigin="anonymous" playsinline muted></video>
+<video id="outroVideo" style="display: none;" crossorigin="anonymous" playsinline muted></video>
 
 <script>
     const mainVideo = document.getElementById('mainVideo');
@@ -54,6 +54,7 @@
     let isScrolling = false;
     let finalVideoUrl = null;
     let currentVideo = mainVideo;
+    let audioCtx, dest, source1, source2;
 
     const sheetCSVUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vReHcj4b9ZAKFQxhMyXFZ_sQQsQHYlyhuPpxr1FmwGXsGRuFhcyUTcP3SeIsmLL04fXfS56feC3Hsoq/pub?gid=0&single=true&output=csv";
     const loginMobile = "8341306663"; 
@@ -79,20 +80,18 @@
             if (imageUrl && outroUrl) {
                 watermarkImage.crossOrigin = "anonymous";
                 watermarkImage.src = imageUrl;
-
-                // అవుట్రో వీడియోను లోడ్ చేయడం
                 outroVideo.src = outroUrl;
                 outroVideo.load();
 
                 watermarkImage.onload = () => {
                     statusDiv.className = "status-box success";
-                    statusDiv.innerText = "అన్నీ సిద్ధంగా ఉన్నాయి! రికార్డింగ్ ప్రారంభించవచ్చు.";
+                    statusDiv.innerText = "అన్నీ సిద్ధంగా ఉన్నాయి! ప్లే చేయవచ్చు.";
                     startBtn.disabled = false;
                     watermarkScrollY = canvas.height;
                 };
             } else {
                 statusDiv.className = "status-box error";
-                statusDiv.innerText = "షీట్‌లో డేటా లభించలేదు!";
+                statusDiv.innerText = "షీట్‌లో డేటా దొరకలేదు!";
             }
         } catch (e) {
             statusDiv.className = "status-box error";
@@ -126,26 +125,31 @@
         requestAnimationFrame(draw);
     }
 
-    startBtn.onclick = () => {
+    startBtn.onclick = async () => {
+        // ఆడియో సెటప్ - యూజర్ క్లిక్ తర్వాతే జరగాలి
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            dest = audioCtx.createMediaStreamDestination();
+            source1 = audioCtx.createMediaElementSource(mainVideo);
+            source2 = audioCtx.createMediaElementSource(outroVideo);
+            source1.connect(dest);
+            source2.connect(dest);
+            source1.connect(audioCtx.destination);
+            source2.connect(audioCtx.destination);
+        }
+
         recordedChunks = [];
         downloadBtn.style.display = "none";
         isScrolling = true;
         currentVideo = mainVideo;
+        
+        mainVideo.muted = false; // రికార్డింగ్ కోసం అన్‌మ్యూట్
+        outroVideo.muted = false;
+
         mainVideo.play();
         draw();
 
         const canvasStream = canvas.captureStream(30);
-        
-        // ఆడియో ట్రాక్స్ రెండింటినీ కలపడం
-        const audioCtx = new AudioContext();
-        const dest = audioCtx.createMediaStreamDestination();
-        const source1 = audioCtx.createMediaElementSource(mainVideo);
-        const source2 = audioCtx.createMediaElementSource(outroVideo);
-        source1.connect(dest);
-        source2.connect(dest);
-        source1.connect(audioCtx.destination);
-        source2.connect(audioCtx.destination);
-
         const combinedStream = new MediaStream([
             ...canvasStream.getVideoTracks(),
             ...dest.stream.getAudioTracks()
@@ -176,7 +180,7 @@
 
     stopBtn.onclick = () => {
         mainVideo.pause(); outroVideo.pause();
-        mediaRecorder.stop();
+        if(mediaRecorder) mediaRecorder.stop();
         startBtn.disabled = false; stopBtn.disabled = true;
     };
 
