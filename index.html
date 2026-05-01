@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Video Maker - Automatic Pro</title>
+    <title>LIC Video Maker - Clean Video Fix</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; padding: 10px; }
         .container { max-width: 450px; margin: auto; background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
@@ -33,7 +33,7 @@
     </div>
 </div>
 
-<video id="vPlayer" style="display:none;" playsinline crossorigin="anonymous"></video>
+<video id="vPlayer" style="display:none;" playsinline></video>
 
 <script>
     const v = document.getElementById('vPlayer');
@@ -48,8 +48,8 @@
     let scrollImg = new Image();
     let recorder, chunks = [], scrollY = 0;
     
-    // పాత క్యాష్ రాకుండా టైమ్ యాడ్ చేశాను
-    let mainSrc = "news.mp4?time=" + new Date().getTime();
+    // డైరెక్ట్ ఫైల్ పేరు మాత్రమే (ఎలాంటి ఎక్స్‌ట్రా లింక్స్ లేవు)
+    let mainSrc = "news.mp4";
     let outroSrc = "";
     
     let isOutro = false, audioCtx, dest, source;
@@ -60,6 +60,7 @@
 
     async function loadData() {
         try {
+            // షీట్ లోడ్ అవ్వడానికి మాత్రమే క్యాష్ బస్టర్
             const r = await fetch(sheet + "&cb=" + Date.now());
             const text = await r.text();
             const rows = text.split("\n");
@@ -93,7 +94,6 @@
 
             await Promise.all(loadPromises);
 
-            // వీడియో డైరెక్ట్ గా గిట్ హబ్ నుండి ఆటోమేటిక్ గా తీసుకుంటుంది
             v.src = mainSrc;
             v.load(); 
             
@@ -119,9 +119,10 @@
         startBtn.disabled = false;
     };
 
+    // వీడియో ఫెయిల్ అయితే వచ్చే మెసేజ్
     v.onerror = () => {
         status.className = "status-box error";
-        status.innerText = "వీడియో ప్లే అవ్వడం లేదు. news.mp4 ఫైల్‌లో లోపం ఉంది.";
+        status.innerText = "మీ news.mp4 ఫార్మాట్ సపోర్ట్ చేయడం లేదు. దాన్ని కన్వర్ట్ చేయాల్సిందే!";
     };
 
     function draw() {
