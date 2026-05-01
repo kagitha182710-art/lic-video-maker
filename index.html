@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Pro Editor - Single Slow Scroll</title>
+    <title>LIC Pro Editor - Voice Fixed</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; padding: 10px; }
         .container { max-width: 450px; margin: auto; background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
@@ -20,18 +20,18 @@
 <body>
 
 <div class="container">
-    <div id="status" class="status-box">సింగిల్ స్లో స్క్రోల్ సెట్ చేస్తున్నాము...</div>
+    <div id="status" class="status-box">వాయిస్ రికార్డింగ్ సిద్ధం చేస్తున్నాము...</div>
     <canvas id="canvas"></canvas>
     <div style="margin-top:15px;">
         <button id="startBtn" disabled>▶ రికార్డింగ్ ప్రారంభించండి</button>
         <button id="stopBtn" disabled>⏹ ఆపు</button>
         <br><br>
-        <a id="downloadBtn" href="#">📥 ఫైనల్ వీడియో డౌన్‌లోడ్</a>
+        <a id="downloadBtn" href="#">📥 వాయిస్‌తో కూడిన వీడియో డౌన్‌లోడ్</a>
     </div>
 </div>
 
-<video id="mainVideo" src="video.mp4" style="display:none;" crossorigin="anonymous" playsinline muted></video>
-<video id="outroVideo" style="display:none;" crossorigin="anonymous" playsinline muted></video>
+<video id="mainVideo" src="video.mp4" style="display:none;" crossorigin="anonymous" playsinline></video>
+<video id="outroVideo" style="display:none;" crossorigin="anonymous" playsinline></video>
 
 <script>
     const mainVideo = document.getElementById('mainVideo');
@@ -71,10 +71,10 @@
             }
             fixedImg.onload = () => {
                 status.className = "status-box success";
-                status.innerText = "సింగిల్ స్లో స్క్రోల్ సిద్ధం!";
+                status.innerText = "వాయిస్ & బ్యానర్లు సిద్ధం!";
                 startBtn.disabled = false;
             };
-        } catch (e) { status.innerText = "డేటా ఎర్రర్!"; }
+        } catch (e) { status.innerText = "డేటా లోడ్ కాలేదు!"; }
     }
 
     loadData();
@@ -87,18 +87,14 @@
 
     function draw() {
         ctx.drawImage(currentVideo, 0, 0, canvas.width, canvas.height);
-
         let w = canvas.width;
+
         if (scrollImg.complete && scrollImg.src !== "" && isScrolling) {
             ctx.save();
             ctx.globalAlpha = 0.15;
             let sH = (scrollImg.height / scrollImg.width) * w;
             ctx.drawImage(scrollImg, 0, scrollY, w, sH);
-            
-            // నెమ్మదిగా ఒకే ఒక్కసారి స్క్రోల్ అవ్వడానికి
-            if (scrollY + sH > -100) { 
-                scrollY -= 0.40; 
-            }
+            if (scrollY + sH > -100) { scrollY -= 0.40; }
             ctx.restore();
         }
 
@@ -112,29 +108,43 @@
         }
     }
 
-    startBtn.onclick = () => {
+    startBtn.onclick = async () => {
+        // ఆడియో ప్రాసెసింగ్ ప్రారంభం
         if (!audioCtx) {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             dest = audioCtx.createMediaStreamDestination();
+            
+            // రెండు వీడియోల నుండి ఆడియో తీసుకోవడం
             sourceMain = audioCtx.createMediaElementSource(mainVideo);
             sourceOutro = audioCtx.createMediaElementSource(outroVideo);
+            
             sourceMain.connect(dest);
             sourceOutro.connect(dest);
+            
+            // ఇది లేకపోతే మనకి వినిపించదు
             sourceMain.connect(audioCtx.destination);
             sourceOutro.connect(audioCtx.destination);
         }
 
+        if (audioCtx.state === 'suspended') {
+            await audioCtx.resume();
+        }
+
         chunks = []; 
-        scrollY = canvas.height; // మళ్ళీ మొదటి నుండి మొదలు
+        scrollY = canvas.height;
         isScrolling = true;
         currentVideo = mainVideo;
+        
         mainVideo.play();
         draw();
 
         const canvasStream = canvas.captureStream(30);
-        const finalStream = new MediaStream([...canvasStream.getVideoTracks(), ...dest.stream.getAudioTracks()]);
-        
-        recorder = new MediaRecorder(finalStream, { 
+        // వీడియో మరియు ఆడియో ట్రాక్స్‌ని పక్కాగా కలపడం
+        const combinedStream = new MediaStream();
+        canvasStream.getVideoTracks().forEach(track => combinedStream.addTrack(track));
+        dest.stream.getAudioTracks().forEach(track => combinedStream.addTrack(track));
+
+        recorder = new MediaRecorder(combinedStream, { 
             mimeType: 'video/webm;codecs=vp8,opus', 
             videoBitsPerSecond: 1500000 
         });
@@ -143,7 +153,7 @@
         recorder.onstop = () => {
             const blob = new Blob(chunks, { type: 'video/webm' });
             downloadBtn.href = URL.createObjectURL(blob);
-            downloadBtn.download = "LIC_Single_Scroll.webm";
+            downloadBtn.download = "LIC_Voice_Video.webm";
             downloadBtn.style.display = "inline-block";
         };
 
