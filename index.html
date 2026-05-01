@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Video Editor - Final Version</title>
+    <title>LIC Video Editor - Banner Version</title>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; margin-top: 20px; background-color: #f4f4f9;}
         canvas { border: 2px solid #333; border-radius: 8px; margin-top: 15px; background-color: #000; max-width: 100%; max-height: 60vh; object-fit: contain;}
         .controls { margin-top: 20px; }
         button { padding: 12px 20px; margin: 5px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; font-size: 16px; font-weight: bold;}
         button:disabled { background: #ccc; cursor: not-allowed; }
-        #downloadBtn { background: #28a745; display: none; } /* డౌన్‌లోడ్ బటన్ మొదట కనిపించదు */
+        #downloadBtn { background: #28a745; display: none; }
     </style>
 </head>
 <body>
@@ -30,7 +30,6 @@
         <button id="downloadBtn">📥 వీడియో డౌన్‌లోడ్ చేయండి</button>
     </div>
 
-    <!-- వీడియో ఫైల్ పేరు కచ్చితంగా video.mp4 అని ఉండాలి -->
     <video id="video" src="video.mp4" style="display: none;" crossorigin="anonymous"></video>
 
     <script>
@@ -70,15 +69,15 @@
 
         function drawWatermark() {
             if (watermarkImage.src) {
-                // ఇమేజ్ రేషియో పాడవకుండా వీడియో వెడల్పులో 95% ఉండేలా సెట్ చేయడం
-                let wWidth = canvas.width * 0.95; 
+                // ఇమేజ్ వెడల్పును వీడియో వెడల్పులో 98% కి పెంచాను (పెద్దగా కనిపించడానికి)
+                let wWidth = canvas.width * 0.98; 
                 let wHeight = (watermarkImage.height / watermarkImage.width) * wWidth;
-                let xPos = (canvas.width - wWidth) / 2; // సెంటర్ లో ఉండటానికి
+                let xPos = (canvas.width - wWidth) / 2;
 
                 ctx.drawImage(watermarkImage, xPos, watermarkScrollY, wWidth, wHeight);
                 
                 if (isScrolling) {
-                    watermarkScrollY -= 1.8; // స్క్రోలింగ్ స్పీడ్
+                    watermarkScrollY -= 1.8; // స్క్రోలింగ్ వేగం
                     if (watermarkScrollY + wHeight < 0) {
                         watermarkScrollY = canvas.height;
                     }
@@ -120,7 +119,7 @@
             mediaRecorder.onstop = () => {
                 const blob = new Blob(recordedChunks, { type: 'video/webm' });
                 finalVideoUrl = URL.createObjectURL(blob);
-                downloadBtn.style.display = "inline-block"; // రికార్డింగ్ ఆగాక బటన్ వస్తుంది కానీ ఆటోమేటిక్ డౌన్‌లోడ్ అవ్వదు
+                downloadBtn.style.display = "inline-block"; 
             };
 
             mediaRecorder.start();
@@ -136,7 +135,6 @@
             stopBtn.disabled = true;
         });
 
-        // కేవలం యూజర్ బటన్ నొక్కితేనే డౌన్‌లోడ్ అవుతుంది
         downloadBtn.addEventListener('click', () => {
             if (finalVideoUrl) {
                 const a = document.createElement('a');
