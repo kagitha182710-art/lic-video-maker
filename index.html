@@ -75,6 +75,7 @@
     let agentMob = "", waterName = "", fixedImg = new Image(), borderImg = new Image();
     let borderSrc = "TRASPARENT BACKROUND.png", outroSrc = "";
     let lastUpdate = 0, nameX, nameY, mobX, mobY;
+    let isOutro = false; // రెండో వీడియో కోసం స్టేటస్
 
     // --- యూజర్ చెకింగ్ ఫంక్షన్ ---
     async function checkUser() {
@@ -137,12 +138,27 @@
     const downloadBtn = document.getElementById('downloadBtn');
 
     function initVideo() {
+        isOutro = false; // కొత్త వీడియో స్టార్ట్ అవుతోంది కాబట్టి రీసెట్
         v.src = "today.mp4?v=" + Date.now();
         v.load();
     }
 
     v.onloadedmetadata = () => { canvas.width = v.videoWidth; canvas.height = v.videoHeight; };
     v.onloadeddata = () => render();
+
+    // రెండో వీడియో ప్లే అవ్వడానికి లాజిక్
+    v.onended = () => {
+        if (!isOutro && outroSrc) {
+            isOutro = true;
+            v.src = outroSrc;
+            v.load();
+            v.play();
+        } else {
+            if (recorder && recorder.state !== "inactive") {
+                stopBtn.click();
+            }
+        }
+    };
 
     function render() {
         let w = canvas.width, h = canvas.height;
@@ -176,11 +192,12 @@
     function changeVideo(src, btn) {
         document.querySelectorAll('.v-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
+        isOutro = false; // వేరే వీడియో ఎంచుకున్నప్పుడు కూడా రీసెట్ చేయాలి
         v.src = src + "?v=" + Date.now();
         v.load();
     }
 
-    // రికార్డింగ్ & సెక్యూరిటీ కోడ్ (మునుపటి లాగే ఉంటుంది)
+    // రికార్డింగ్ & సెక్యూరిటీ కోడ్ 
     let recorder, chunks = [];
     startBtn.onclick = async () => {
         startBtn.disabled = true; stopBtn.disabled = false;
@@ -200,7 +217,7 @@
         };
         recorder.start();
     };
-    stopBtn.onclick = () => { v.pause(); recorder.stop(); startBtn.disabled = false; stopBtn.disabled = true; };
+    stopBtn.onclick = () => { v.pause(); if(recorder && recorder.state !== "inactive") recorder.stop(); startBtn.disabled = false; stopBtn.disabled = true; };
     document.addEventListener('contextmenu', e => e.preventDefault());
 </script>
 </body>
