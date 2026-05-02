@@ -3,21 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Video Maker - Secure Login</title>
+    <title>LIC Video Maker - Premium Access</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; padding: 10px; -webkit-user-select: none; user-select: none; }
         .container { max-width: 450px; margin: auto; background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
         
         /* లాగిన్ స్టైల్స్ */
         #loginBox { padding: 30px 10px; }
-        .input-field { width: 80%; padding: 12px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; text-align: center; }
-        .login-btn { width: 85%; padding: 12px; background: #004aad; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .input-field { width: 80%; padding: 12px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; text-align: center; font-weight: bold;}
+        .login-btn { width: 85%; padding: 12px; background: #004aad; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .login-btn:active { transform: scale(0.95); }
         
         /* వీడియో మేకర్ (మొదట దాచబడుతుంది) */
         #makerSection { display: none; }
 
         .video-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; max-height: 150px; overflow-y: auto; padding: 10px; border: 1px solid #ddd; border-radius: 10px; }
-        .v-btn { padding: 8px 5px; font-size: 11px; background: #eef2f7; border: 1px solid #004aad; border-radius: 5px; cursor: pointer; font-weight: bold; color: #004aad; }
+        .v-btn { padding: 8px 5px; font-size: 11px; background: #eef2f7; border: 1px solid #004aad; border-radius: 5px; cursor: pointer; font-weight: bold; color: #004aad; transition: 0.3s;}
         .v-btn.active { background: #004aad; color: #fff; }
         
         canvas { border: 2px solid #ccc; border-radius: 10px; background: #fff; width: 100%; height: auto; display: block; margin: auto; }
@@ -36,7 +37,7 @@
 <div class="container">
     <div id="loginBox">
         <img src="https://www.licindia.in/LIC_India/media/LIC_Media/logo.png" width="100" alt="LIC Logo"><br><br>
-        <h3 style="color:#004aad;">ఏజెంట్ లాగిన్</h3>
+        <h3 style="color:#004aad;">VIP వీడియో మేకర్</h3>
         <p style="font-size: 13px; color: #666;">మీ రిజిస్టర్డ్ మొబైల్ నంబర్ ఎంటర్ చేయండి</p>
         <input type="tel" id="mobileInput" class="input-field" placeholder="99590XXXXX" maxlength="10">
         <br>
@@ -45,14 +46,16 @@
     </div>
 
     <div id="makerSection">
-        <h4 id="welcomeTxt" style="color:#004aad; margin-top:0;"></h4>
+        <h4 id="welcomeTxt" style="color:#004aad; margin-top:0; margin-bottom:5px;"></h4>
+        <p id="validityTxt" style="color: #d32f2f; font-size: 13px; font-weight: bold; margin-top: 0; margin-bottom: 15px; background: #fff9e6; padding: 5px 15px; border-radius: 20px; border: 1px solid #ffcc00; display: inline-block;"></p>
+        
         <div class="video-grid">
             <button class="v-btn active" onclick="changeVideo('today.mp4', this)">న్యూస్ యాంకర్</button>
             <button class="v-btn" onclick="changeVideo('video2.mp4', this)">జీవన్ ఉమంగ్</button>
             <button class="v-btn" onclick="changeVideo('video3.mp4', this)">జీవన్ ఆనంద్</button>
             <button class="v-btn" onclick="changeVideo('video4.mp4', this)">రిటైర్మెంట్</button>
             <button class="v-btn" onclick="changeVideo('video5.mp4', this)">కన్యాదాన్</button>
-            </div>
+        </div>
 
         <div id="status" class="status-box success">వీడియో సిద్ధంగా ఉంది!</div>
         <canvas id="canvas"></canvas>
@@ -75,7 +78,7 @@
     let agentMob = "", waterName = "", fixedImg = new Image(), borderImg = new Image();
     let borderSrc = "TRASPARENT BACKROUND.png", outroSrc = "";
     let lastUpdate = 0, nameX, nameY, mobX, mobY;
-    let isOutro = false; // రెండో వీడియో కోసం స్టేటస్
+    let isOutro = false; 
 
     // --- యూజర్ చెకింగ్ ఫంక్షన్ ---
     async function checkUser() {
@@ -89,23 +92,25 @@
         }
 
         logStat.style.color = "orange";
-        logStat.innerText = "తనిఖీ చేస్తున్నాము...";
+        logStat.innerText = "తనిఖీ చేస్తున్నాము... ⏳";
 
         try {
             const r = await fetch(sheetURL + "&cb=" + Date.now());
             const text = await r.text();
             const rows = text.split("\n");
             let userFound = false;
+            let validityDate = "Lifetime Free"; // డిఫాల్ట్ వాలిడిటీ
 
             for (let i = 0; i < rows.length; i++) {
                 let cols = rows[i].split(",");
                 if (cols[0] && cols[0].trim() === input) {
                     agentMob = cols[0].trim();
-                    waterName = cols[4]?.trim() || "LIC Agent";
+                    waterName = cols[4]?.trim() || "LIC Agent"; // Column E (Name)
+                    validityDate = cols[5]?.trim() || "Lifetime Free"; // Column F (Validity Date)
+                    
                     let fSrc = cols[1]?.trim();
                     outroSrc = cols[2]?.trim();
                     
-                    // డేటా దొరికితే ఇమేజెస్ లోడ్ చేయాలి
                     borderImg.src = borderSrc;
                     if (fSrc) {
                         fixedImg.crossOrigin = "anonymous";
@@ -121,10 +126,21 @@
                 document.getElementById('loginBox').style.display = "none";
                 document.getElementById('makerSection').style.display = "block";
                 document.getElementById('welcomeTxt').innerText = "స్వాగతం, " + waterName;
+                document.getElementById('validityTxt').innerText = "Plan Valid Till: " + validityDate;
                 initVideo();
             } else {
+                // ⭐️ నంబర్ లేకపోతే పేమెంట్ పేజీకి వెళ్ళే లాజిక్ ⭐️
                 logStat.style.color = "red";
-                logStat.innerText = "క్షమించండి! ఈ నంబర్ మా వద్ద లేదు.";
+                logStat.innerHTML = "క్షమించండి! ఈ నంబర్ మా వద్ద లేదు.<br><br><span style='color:#004aad;'>పేమెంట్ పేజీ ఓపెన్ అవుతోంది... ⚡</span>";
+                
+                setTimeout(() => {
+                    let paymentPageUrl = "https://www.mylicprofile.com/p/payment-page.html?mob=" + input;
+                    if (typeof window.AppInventor !== "undefined") {
+                        window.AppInventor.setWebViewString("openbrowser|||" + paymentPageUrl);
+                    } else {
+                        window.location.href = paymentPageUrl;
+                    }
+                }, 2500); // 2.5 సెకన్ల తర్వాత వెళ్తుంది
             }
         } catch (e) { logStat.innerText = "సర్వర్ సమస్య!"; }
     }
@@ -138,7 +154,7 @@
     const downloadBtn = document.getElementById('downloadBtn');
 
     function initVideo() {
-        isOutro = false; // కొత్త వీడియో స్టార్ట్ అవుతోంది కాబట్టి రీసెట్
+        isOutro = false; 
         v.src = "today.mp4?v=" + Date.now();
         v.load();
     }
@@ -146,7 +162,6 @@
     v.onloadedmetadata = () => { canvas.width = v.videoWidth; canvas.height = v.videoHeight; };
     v.onloadeddata = () => render();
 
-    // రెండో వీడియో ప్లే అవ్వడానికి లాజిక్
     v.onended = () => {
         if (!isOutro && outroSrc) {
             isOutro = true;
@@ -192,12 +207,11 @@
     function changeVideo(src, btn) {
         document.querySelectorAll('.v-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        isOutro = false; // వేరే వీడియో ఎంచుకున్నప్పుడు కూడా రీసెట్ చేయాలి
+        isOutro = false; 
         v.src = src + "?v=" + Date.now();
         v.load();
     }
 
-    // రికార్డింగ్ & సెక్యూరిటీ కోడ్ 
     let recorder, chunks = [];
     startBtn.onclick = async () => {
         startBtn.disabled = true; stopBtn.disabled = false;
