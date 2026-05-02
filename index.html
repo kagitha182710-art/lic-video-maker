@@ -3,29 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LIC Video Maker - Premium Access</title>
+    <title>VIP Video Maker - Premium Access</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800;900&family=Anek+Telugu:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f0f2f5; padding: 10px; -webkit-user-select: none; user-select: none; }
-        .container { max-width: 450px; margin: auto; background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+        body { font-family: 'Poppins', 'Anek Telugu', sans-serif; text-align: center; background: #eef2f7; padding: 10px; -webkit-user-select: none; user-select: none; margin: 0; }
         
-        /* లాగిన్ స్టైల్స్ */
-        #loginBox { padding: 30px 10px; }
-        .input-field { width: 80%; padding: 12px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; text-align: center; font-weight: bold;}
-        .login-btn { width: 85%; padding: 12px; background: #004aad; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        .login-btn:active { transform: scale(0.95); }
+        /* ⭐️ 1. కొత్త ప్రీమియం లాగిన్ స్క్రీన్ డిజైన్ ⭐️ */
+        #loginWrapper {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #001a33 0%, #004080 100%);
+            display: flex; justify-content: center; align-items: center; z-index: 9999;
+        }
+        .premium-login-card {
+            background: #ffffff;
+            padding: 40px 30px; border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            max-width: 400px; width: 85%;
+            text-align: center;
+            animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
         
-        /* వీడియో మేకర్ (మొదట దాచబడుతుంది) */
-        #makerSection { display: none; }
+        .premium-login-card img.logo {
+            max-width: 130px; border-radius: 15px; margin-bottom: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1); object-fit: cover;
+        }
+        .premium-login-card h3 {
+            color: #001a33; font-size: 26px; font-weight: 900; margin: 0 0 10px; text-transform: uppercase; letter-spacing: 1px;
+        }
+        .premium-login-card h3 span { color: #ffcc00; }
+        .premium-login-card p { color: #666; font-size: 14px; font-weight: 600; margin-bottom: 25px; }
+        
+        .premium-input {
+            width: 100%; padding: 18px; margin-bottom: 20px;
+            border-radius: 12px; border: 2px solid #eef0f3; background: #f8f9fa;
+            font-size: 18px; text-align: center; font-weight: 800; letter-spacing: 2px;
+            color: #001a33; outline: none; box-sizing: border-box; transition: 0.3s;
+        }
+        .premium-input:focus { border-color: #004aad; background: #fff; box-shadow: 0 0 15px rgba(0, 74, 173, 0.15); }
+        
+        .premium-btn {
+            width: 100%; padding: 16px;
+            background: linear-gradient(135deg, #ff9900, #ffcc00);
+            color: #001a33; border: none; border-radius: 12px;
+            font-size: 18px; font-weight: 900; cursor: pointer;
+            text-transform: uppercase; letter-spacing: 1px;
+            box-shadow: 0 10px 20px rgba(255, 204, 0, 0.4); transition: 0.3s;
+        }
+        .premium-btn:active { transform: scale(0.95); box-shadow: 0 5px 10px rgba(255, 204, 0, 0.4); }
 
+        /* ⭐️ 2. వీడియో మేకర్ స్టైల్స్ (లోపల) ⭐️ */
+        .container { max-width: 450px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); display: none; }
         .video-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; max-height: 150px; overflow-y: auto; padding: 10px; border: 1px solid #ddd; border-radius: 10px; }
-        .v-btn { padding: 8px 5px; font-size: 11px; background: #eef2f7; border: 1px solid #004aad; border-radius: 5px; cursor: pointer; font-weight: bold; color: #004aad; transition: 0.3s;}
-        .v-btn.active { background: #004aad; color: #fff; }
+        .v-btn { padding: 10px 5px; font-size: 12px; background: #eef2f7; border: 1px solid #004aad; border-radius: 8px; cursor: pointer; font-weight: bold; color: #004aad; transition: 0.3s;}
+        .v-btn.active { background: #004aad; color: #fff; box-shadow: 0 4px 10px rgba(0, 74, 173, 0.3);}
         
         canvas { border: 2px solid #ccc; border-radius: 10px; background: #fff; width: 100%; height: auto; display: block; margin: auto; }
         .status-box { padding: 10px; margin-bottom: 10px; border-radius: 5px; font-weight: bold; font-size: 14px; }
         .success { background: #d4edda; color: #155724; }
-        .error { background: #f8d7da; color: #721c24; }
-        .loading { background: #fff3cd; color: #856404; }
         
         #startBtn { background: #004aad; color: #fff; padding: 12px 20px; border:none; border-radius: 8px; font-weight:bold; cursor:pointer;}
         #stopBtn { background: #d93025; color: #fff; padding: 12px 20px; border:none; border-radius: 8px; font-weight:bold; cursor:pointer;}
@@ -34,39 +69,40 @@
 </head>
 <body oncontextmenu="return false;">
 
-<div class="container">
-    <div id="loginBox">
-        <img src="https://www.licindia.in/LIC_India/media/LIC_Media/logo.png" width="100" alt="LIC Logo"><br><br>
-        <h3 style="color:#004aad;">VIP వీడియో మేకర్</h3>
-        <p style="font-size: 13px; color: #666;">మీ రిజిస్టర్డ్ మొబైల్ నంబర్ ఎంటర్ చేయండి</p>
-        <input type="tel" id="mobileInput" class="input-field" placeholder="99590XXXXX" maxlength="10">
-        <br>
-        <button id="loginBtn" class="login-btn" onclick="checkUser()">ప్రవేశించండి (Login)</button>
-        <div id="loginStatus" style="margin-top:15px; font-size:14px; font-weight:bold;"></div>
+<div id="loginWrapper">
+    <div class="premium-login-card">
+        
+        <img src="https://i.ibb.co/3mjvcSsq/try.jpg" class="logo" alt="My Logo">
+        <h3><span>VIP</span> వీడియో మేకర్</h3>
+        <p>మీ రిజిస్టర్డ్ మొబైల్ నంబర్ ఎంటర్ చేయండి</p>
+        
+        <input type="tel" id="mobileInput" class="premium-input" placeholder="99590XXXXX" maxlength="10">
+        <button id="loginBtn" class="premium-btn" onclick="checkUser()">లాగిన్ 🚀</button>
+        <div id="loginStatus" style="margin-top:18px; font-size:14px; font-weight:bold;"></div>
+    </div>
+</div>
+
+<div class="container" id="makerSection">
+    <h4 id="welcomeTxt" style="color:#004aad; margin-top:0; margin-bottom:5px; font-size:20px;"></h4>
+    <p id="validityTxt" style="color: #d32f2f; font-size: 13px; font-weight: bold; margin-top: 0; margin-bottom: 15px; background: #fff9e6; padding: 5px 15px; border-radius: 20px; border: 1px solid #ffcc00; display: inline-block;"></p>
+    
+    <div class="video-grid">
+        <button class="v-btn active" onclick="changeVideo('today.mp4', this)">న్యూస్ యాంకర్</button>
+        <button class="v-btn" onclick="changeVideo('video2.mp4', this)">జీవన్ ఉమంగ్</button>
+        <button class="v-btn" onclick="changeVideo('video3.mp4', this)">జీవన్ ఆనంద్</button>
+        <button class="v-btn" onclick="changeVideo('video4.mp4', this)">రిటైర్మెంట్</button>
+        <button class="v-btn" onclick="changeVideo('video5.mp4', this)">కన్యాదాన్</button>
     </div>
 
-    <div id="makerSection">
-        <h4 id="welcomeTxt" style="color:#004aad; margin-top:0; margin-bottom:5px;"></h4>
-        <p id="validityTxt" style="color: #d32f2f; font-size: 13px; font-weight: bold; margin-top: 0; margin-bottom: 15px; background: #fff9e6; padding: 5px 15px; border-radius: 20px; border: 1px solid #ffcc00; display: inline-block;"></p>
-        
-        <div class="video-grid">
-            <button class="v-btn active" onclick="changeVideo('today.mp4', this)">న్యూస్ యాంకర్</button>
-            <button class="v-btn" onclick="changeVideo('video2.mp4', this)">జీవన్ ఉమంగ్</button>
-            <button class="v-btn" onclick="changeVideo('video3.mp4', this)">జీవన్ ఆనంద్</button>
-            <button class="v-btn" onclick="changeVideo('video4.mp4', this)">రిటైర్మెంట్</button>
-            <button class="v-btn" onclick="changeVideo('video5.mp4', this)">కన్యాదాన్</button>
-        </div>
-
-        <div id="status" class="status-box success">వీడియో సిద్ధంగా ఉంది!</div>
-        <canvas id="canvas"></canvas>
-        
-        <div style="margin-top:15px; display:flex; justify-content:center; gap:10px;">
-            <button id="startBtn">▶ రికార్డింగ్</button>
-            <button id="stopBtn" disabled>⏹ ఆపు</button>
-        </div>
-        <div style="margin-top:15px;">
-            <a id="downloadBtn" href="#">📥 వీడియో డౌన్‌లోడ్</a>
-        </div>
+    <div id="status" class="status-box success">వీడియో సిద్ధంగా ఉంది!</div>
+    <canvas id="canvas"></canvas>
+    
+    <div style="margin-top:15px; display:flex; justify-content:center; gap:10px;">
+        <button id="startBtn">▶ రికార్డింగ్</button>
+        <button id="stopBtn" disabled>⏹ ఆపు</button>
+    </div>
+    <div style="margin-top:15px;">
+        <a id="downloadBtn" href="#">📥 వీడియో డౌన్‌లోడ్</a>
     </div>
 </div>
 
@@ -80,7 +116,6 @@
     let lastUpdate = 0, nameX, nameY, mobX, mobY;
     let isOutro = false; 
 
-    // --- వాలిడిటీ ఫార్మాట్ మార్చే ఫంక్షన్ ---
     function formatDate(rawDate) {
         if(!rawDate) return "Lifetime Free";
         let parts = rawDate.split(/[-/ \T]/); 
@@ -90,7 +125,6 @@
         return rawDate; 
     }
 
-    // --- యూజర్ చెకింగ్ ఫంక్షన్ ---
     async function checkUser() {
         const input = document.getElementById('mobileInput').value.trim();
         const logStat = document.getElementById('loginStatus');
@@ -135,7 +169,7 @@
             }
 
             if (userFound) {
-                document.getElementById('loginBox').style.display = "none";
+                document.getElementById('loginWrapper').style.display = "none";
                 document.getElementById('makerSection').style.display = "block";
                 document.getElementById('welcomeTxt').innerText = "స్వాగతం, " + waterName;
                 document.getElementById('validityTxt').innerText = "Plan Valid Till: " + finalValidity;
@@ -145,9 +179,7 @@
                 logStat.innerHTML = "క్షమించండి! ఈ నంబర్ మా వద్ద లేదు.<br><br><span style='color:#004aad;'>పేమెంట్ పేజీ ఓపెన్ అవుతోంది... ⚡</span>";
                 
                 setTimeout(() => {
-                    // ⭐️ ఇక్కడ గిట్‌హబ్ పేమెంట్ లింక్ మార్చబడింది ⭐️
                     let paymentPageUrl = "https://kagitha182710-art.github.io/lic-video-maker/payment.html?mob=" + input;
-                    
                     if (typeof window.AppInventor !== "undefined") {
                         window.AppInventor.setWebViewString("openbrowser|||" + paymentPageUrl);
                     } else {
@@ -158,7 +190,6 @@
         } catch (e) { logStat.innerText = "సర్వర్ సమస్య!"; }
     }
 
-    // --- వీడియో మేకర్ లాజిక్ ---
     const v = document.getElementById('vPlayer');
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
