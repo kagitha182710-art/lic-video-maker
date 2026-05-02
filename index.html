@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VIP Video Maker - Premium Access</title>
+    <!-- ఫాంట్స్ యాడ్ చేయబడ్డాయి -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800;900&family=Anek+Telugu:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Poppins', 'Anek Telugu', sans-serif; text-align: center; background: #eef2f7; padding: 10px; -webkit-user-select: none; user-select: none; margin: 0; }
@@ -69,19 +70,24 @@
 </head>
 <body oncontextmenu="return false;">
 
+<!-- ⭐️ క్రొత్త ప్రొఫెషనల్ లాగిన్ స్క్రీన్ ⭐️ -->
 <div id="loginWrapper">
     <div class="premium-login-card">
         
-        <img src="https://i.ibb.co/0j0NQ09L/palleturi.png" class="logo" alt="My Logo">
+        <!-- 👇 మీ సొంత లోగో లింక్‌ను ఇక్కడ (src="") లోపల మార్చండి 👇 -->
+        <img src="https://i.ibb.co/3mjvcSsq/try.jpg" class="logo" alt="My Logo">
+        <!-- 👆 పైన లింక్ మార్చండి 👆 -->
+
         <h3><span>VIP</span> వీడియో మేకర్</h3>
         <p>మీ రిజిస్టర్డ్ మొబైల్ నంబర్ ఎంటర్ చేయండి</p>
         
-        <input type="tel" id="mobileInput" class="premium-input" placeholder="XXXXXXXXXX" maxlength="10">
+        <input type="tel" id="mobileInput" class="premium-input" placeholder="99590XXXXX" maxlength="10">
         <button id="loginBtn" class="premium-btn" onclick="checkUser()">లాగిన్ 🚀</button>
         <div id="loginStatus" style="margin-top:18px; font-size:14px; font-weight:bold;"></div>
     </div>
 </div>
 
+<!-- ⭐️ లోపలికి వెళ్ళాక కనిపించే వీడియో మేకర్ ⭐️ -->
 <div class="container" id="makerSection">
     <h4 id="welcomeTxt" style="color:#004aad; margin-top:0; margin-bottom:5px; font-size:20px;"></h4>
     <p id="validityTxt" style="color: #d32f2f; font-size: 13px; font-weight: bold; margin-top: 0; margin-bottom: 15px; background: #fff9e6; padding: 5px 15px; border-radius: 20px; border: 1px solid #ffcc00; display: inline-block;"></p>
@@ -98,7 +104,7 @@
     <canvas id="canvas"></canvas>
     
     <div style="margin-top:15px; display:flex; justify-content:center; gap:10px;">
-        <button id="startBtn">▶ జనరేట్ వీడియో </button>
+        <button id="startBtn">▶ రికార్డింగ్</button>
         <button id="stopBtn" disabled>⏹ ఆపు</button>
     </div>
     <div style="margin-top:15px;">
@@ -117,12 +123,33 @@
     let isOutro = false; 
 
     function formatDate(rawDate) {
-        if(!rawDate) return "Lifetime Free";
+        if(!rawDate || rawDate.trim() === "") return "Lifetime Free";
         let parts = rawDate.split(/[-/ \T]/); 
         if (parts.length >= 3 && parts[0].length === 4) {
             return parts[2].substring(0,2) + "-" + parts[1] + "-" + parts[0];
         }
         return rawDate; 
+    }
+
+    // ⭐️ వాలిడిటీ డేట్ అయిపోయిందో లేదో చెక్ చేసే ఫంక్షన్ ⭐️
+    function isPlanExpired(rawDate) {
+        if (!rawDate || rawDate.trim() === "" || rawDate.toLowerCase() === "lifetime free") return false;
+
+        let parts = rawDate.split(/[-/ \T]/);
+        if (parts.length >= 3) {
+            let expiryDate;
+            if (parts[0].length === 4) {
+                // ఫార్మాట్ YYYY-MM-DD
+                expiryDate = new Date(parts[0], parts[1] - 1, parts[2]);
+            } else {
+                 // ఫార్మాట్ DD-MM-YYYY ఉంటే
+                expiryDate = new Date(parts[2], parts[1] - 1, parts[0]);
+            }
+            let today = new Date();
+            // ఈ రోజు డేట్ కంటే ఎక్స్‌పైరీ డేట్ తక్కువ ఉంటే ప్లాన్ అయిపోయినట్టు
+            return today > expiryDate; 
+        }
+        return false;
     }
 
     async function checkUser() {
@@ -144,6 +171,7 @@
             const rows = text.split("\n");
             let userFound = false;
             let finalValidity = "Lifetime Free"; 
+            let planExpired = false;
 
             for (let i = 0; i < rows.length; i++) {
                 let cols = rows[i].split(",");
@@ -153,6 +181,7 @@
                     
                     let rawDate = cols[5]?.trim() || "";
                     finalValidity = formatDate(rawDate);
+                    planExpired = isPlanExpired(rawDate);
                     
                     let fSrc = cols[1]?.trim();
                     outroSrc = cols[2]?.trim();
@@ -169,11 +198,26 @@
             }
 
             if (userFound) {
-                document.getElementById('loginWrapper').style.display = "none";
-                document.getElementById('makerSection').style.display = "block";
-                document.getElementById('welcomeTxt').innerText = "స్వాగతం, " + waterName;
-                document.getElementById('validityTxt').innerText = "Plan Valid Till: " + finalValidity;
-                initVideo();
+                if (planExpired) {
+                    // ⭐️ ప్లాన్ ఎక్స్‌పైర్ అయితే ఇక్కడ లాజిక్ ⭐️
+                    logStat.style.color = "red";
+                    logStat.innerHTML = "మీ ప్లాన్ వాలిడిటీ ముగిసింది.<br><br><span style='color:#004aad;'>పేమెంట్ పేజీ ఓపెన్ అవుతోంది... ⚡</span>";
+                    
+                    setTimeout(() => {
+                        let paymentPageUrl = "https://kagitha182710-art.github.io/lic-video-maker/payment.html?mob=" + input;
+                        if (typeof window.AppInventor !== "undefined") {
+                            window.AppInventor.setWebViewString("openbrowser|||" + paymentPageUrl);
+                        } else {
+                            window.location.href = paymentPageUrl;
+                        }
+                    }, 2500);
+                } else {
+                    document.getElementById('loginWrapper').style.display = "none";
+                    document.getElementById('makerSection').style.display = "block";
+                    document.getElementById('welcomeTxt').innerText = "స్వాగతం, " + waterName;
+                    document.getElementById('validityTxt').innerText = "Plan Valid Till: " + finalValidity;
+                    initVideo();
+                }
             } else {
                 logStat.style.color = "red";
                 logStat.innerHTML = "క్షమించండి! ఈ నంబర్ మా వద్ద లేదు.<br><br><span style='color:#004aad;'>పేమెంట్ పేజీ ఓపెన్ అవుతోంది... ⚡</span>";
