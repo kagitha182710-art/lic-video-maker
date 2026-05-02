@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VIP Video Maker - Subscription</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800;900&family=Anek+Telugu:wght@400;600;800&display=swap" rel="stylesheet">
-    <style>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script> <style>
         body {
             margin: 0; padding: 0; font-family: 'Poppins', 'Anek Telugu', sans-serif;
             background: linear-gradient(135deg, #001a33 0%, #004080 100%);
@@ -19,7 +19,6 @@
             display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; padding: 20px; max-width: 1100px; margin: 0 auto;
         }
         
-        /* Pricing Card Base */
         .pricing-card {
             background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px);
             border: 1px solid rgba(255,255,255,0.2); border-radius: 20px;
@@ -28,7 +27,6 @@
         }
         .pricing-card:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
         
-        /* Card Elements */
         .plan-duration { font-size: 24px; font-weight: 800; color: #fff; margin-bottom: 5px; }
         .plan-price { font-size: 45px; font-weight: 900; color: #ffcc00; margin: 15px 0; }
         .plan-price span { font-size: 18px; color: #b3cce6; font-weight: normal; }
@@ -37,16 +35,14 @@
         .features li { font-size: 14px; margin-bottom: 12px; display: flex; align-items: center; color: #eef2f7;}
         .features li::before { content: '✅'; margin-right: 10px; font-size: 16px; }
         
-        /* Buttons */
         .pay-btn {
             display: inline-block; width: 85%; padding: 15px; border-radius: 12px;
             font-size: 16px; font-weight: bold; text-transform: uppercase;
-            text-decoration: none; transition: 0.3s;
+            border: none; cursor: pointer; transition: 0.3s;
         }
         .btn-standard { background: #eef2f7; color: #001a33; }
         .btn-standard:hover { background: #fff; box-shadow: 0 5px 15px rgba(255,255,255,0.3); }
         
-        /* Popular Plan Highlights */
         .popular {
             background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,204,0,0.1));
             border: 2px solid #ffcc00; transform: scale(1.05);
@@ -63,10 +59,8 @@
         .popular .pay-btn { background: linear-gradient(135deg, #ff9900, #ffcc00); color: #001a33; box-shadow: 0 10px 20px rgba(255,204,0,0.4); }
         .popular .pay-btn:hover { background: #fff; box-shadow: 0 10px 25px rgba(255,255,255,0.5); }
 
-        /* Save Tag */
         .save-tag { display: inline-block; background: rgba(37, 211, 102, 0.2); color: #25D366; padding: 3px 10px; border-radius: 5px; font-size: 12px; font-weight: bold; margin-bottom: 15px; border: 1px solid #25D366;}
 
-        /* Mobile Adjustments */
         @media (max-width: 768px) {
             .popular { transform: scale(1); margin-top: 20px; }
             .popular:hover { transform: translateY(-5px); }
@@ -82,11 +76,10 @@
     </div>
 
     <div class="pricing-container">
-
         <div class="pricing-card">
             <div class="plan-duration">3 Months</div>
-            <div class="save-tag" style="opacity: 0;">Basic Plan</div> <div class="plan-price">₹1500<br><span>(₹500 / month)</span></div>
-            
+            <div class="save-tag" style="opacity: 0;">Basic Plan</div> 
+            <div class="plan-price">₹1500<br><span>(₹500 / month)</span></div>
             <ul class="features">
                 <li>15+ Premium LIC Videos</li>
                 <li>Dynamic Watermark Security</li>
@@ -94,8 +87,7 @@
                 <li>100% Download Access</li>
                 <li>Basic Support</li>
             </ul>
-            
-            <a href="YOUR_3_MONTHS_PAYMENT_LINK_HERE" class="pay-btn btn-standard">Select Plan</a>
+            <button onclick="openRazorpay(1500, '3 Months VIP Plan')" class="pay-btn btn-standard">Select Plan</button>
         </div>
 
         <div class="pricing-card popular">
@@ -103,7 +95,6 @@
             <div class="plan-duration">6 Months</div>
             <div class="save-tag">SAVE ₹500</div>
             <div class="plan-price">₹2500<br><span>(₹416 / month)</span></div>
-            
             <ul class="features">
                 <li>Everything in 3 Months Plan</li>
                 <li>Priority Access to New Videos</li>
@@ -111,15 +102,13 @@
                 <li>Faster Processing Speed</li>
                 <li>Dedicated WhatsApp Support</li>
             </ul>
-            
-            <a href="YOUR_6_MONTHS_PAYMENT_LINK_HERE" class="pay-btn">Select Plan 🚀</a>
+            <button onclick="openRazorpay(2500, '6 Months VIP Plan')" class="pay-btn">Select Plan 🚀</button>
         </div>
 
         <div class="pricing-card">
             <div class="plan-duration">12 Months</div>
             <div class="save-tag">SAVE ₹2000 (Best Value)</div>
             <div class="plan-price">₹4000<br><span>(₹333 / month)</span></div>
-            
             <ul class="features">
                 <li>Everything in 6 Months Plan</li>
                 <li>Full 1 Year VIP Access</li>
@@ -127,11 +116,54 @@
                 <li>Custom Branding Options</li>
                 <li>Direct Call Support</li>
             </ul>
-            
-            <a href="YOUR_12_MONTHS_PAYMENT_LINK_HERE" class="pay-btn btn-standard">Select Plan</a>
+            <button onclick="openRazorpay(4000, '12 Months VIP Plan')" class="pay-btn btn-standard">Select Plan</button>
         </div>
-
     </div>
 
+    <script>
+        // URL నుండి మొబైల్ నంబర్ తీసుకోవడం
+        const urlParams = new URLSearchParams(window.location.search);
+        const userMobile = urlParams.get('mob') || "";
+
+        function openRazorpay(amount, planName) {
+            if (!userMobile) {
+                alert("మొబైల్ నంబర్ మిస్ అయ్యింది! దయచేసి యాప్ మెయిన్ పేజీ నుండి మళ్ళీ రండి.");
+                return;
+            }
+
+            // Razorpay సెట్టింగ్స్
+            var options = {
+                "key": "YOUR_RAZORPAY_KEY_ID_HERE", // 🔴 ఇక్కడ మీ Razorpay Key ID పెట్టాలి (ఉదా: rzp_live_xxxxxxxxxxxx)
+                "amount": amount * 100, // Razorpay కి అమౌంట్ పైసల్లో పంపాలి (1500 = 150000)
+                "currency": "INR",
+                "name": "పల్లెటూరి కుర్రాడు (VIP)",
+                "description": planName,
+                "image": "https://www.licindia.in/LIC_India/media/LIC_Media/logo.png", // మీ యాప్ లోగో లింక్ ఇచ్చుకోవచ్చు
+                
+                "handler": function (response) {
+                    // పేమెంట్ సక్సెస్ అయ్యాక జరిగేది
+                    alert("పేమెంట్ సక్సెస్! 🎉 మీ " + planName + " ఆక్టివేట్ అవుతోంది. దయచేసి మళ్ళీ లాగిన్ అవ్వండి.");
+                    
+                    // పేమెంట్ సక్సెస్ అయ్యాక తిరిగి మీ పాత వీడియో మేకర్ పేజీకి పంపించే లింక్ (ఇక్కడ మీ అసలు పేజీ లింక్ ఇవ్వండి)
+                    window.location.href = "https://kagitha182710-art.github.io/lic-video-maker/";
+                },
+                "prefill": {
+                    "contact": userMobile // ఫోన్ నంబర్ ఆటోమేటిక్ గా వస్తుంది
+                },
+                "theme": {
+                    "color": "#004aad" // Razorpay పాపప్ రంగు
+                }
+            };
+
+            var rzp = new Razorpay(options);
+            
+            rzp.on('payment.failed', function (response){
+                alert("పేమెంట్ ఫెయిల్ అయ్యింది! దయచేసి మళ్ళీ ప్రయత్నించండి.");
+            });
+
+            // పాపప్ ఓపెన్ చేయడం
+            rzp.open();
+        }
+    </script>
 </body>
 </html>
