@@ -80,6 +80,16 @@
     let lastUpdate = 0, nameX, nameY, mobX, mobY;
     let isOutro = false; 
 
+    // --- వాలిడిటీ ఫార్మాట్ మార్చే ఫంక్షన్ ---
+    function formatDate(rawDate) {
+        if(!rawDate) return "Lifetime Free";
+        let parts = rawDate.split(/[-/ \T]/); 
+        if (parts.length >= 3 && parts[0].length === 4) {
+            return parts[2].substring(0,2) + "-" + parts[1] + "-" + parts[0];
+        }
+        return rawDate; 
+    }
+
     // --- యూజర్ చెకింగ్ ఫంక్షన్ ---
     async function checkUser() {
         const input = document.getElementById('mobileInput').value.trim();
@@ -99,14 +109,16 @@
             const text = await r.text();
             const rows = text.split("\n");
             let userFound = false;
-            let validityDate = "Lifetime Free"; // డిఫాల్ట్ వాలిడిటీ
+            let finalValidity = "Lifetime Free"; 
 
             for (let i = 0; i < rows.length; i++) {
                 let cols = rows[i].split(",");
                 if (cols[0] && cols[0].trim() === input) {
                     agentMob = cols[0].trim();
-                    waterName = cols[4]?.trim() || "LIC Agent"; // Column E (Name)
-                    validityDate = cols[5]?.trim() || "Lifetime Free"; // Column F (Validity Date)
+                    waterName = cols[4]?.trim() || "LIC Agent"; 
+                    
+                    let rawDate = cols[5]?.trim() || "";
+                    finalValidity = formatDate(rawDate);
                     
                     let fSrc = cols[1]?.trim();
                     outroSrc = cols[2]?.trim();
@@ -126,21 +138,22 @@
                 document.getElementById('loginBox').style.display = "none";
                 document.getElementById('makerSection').style.display = "block";
                 document.getElementById('welcomeTxt').innerText = "స్వాగతం, " + waterName;
-                document.getElementById('validityTxt').innerText = "Plan Valid Till: " + validityDate;
+                document.getElementById('validityTxt').innerText = "Plan Valid Till: " + finalValidity;
                 initVideo();
             } else {
-                // ⭐️ నంబర్ లేకపోతే పేమెంట్ పేజీకి వెళ్ళే లాజిక్ ⭐️
                 logStat.style.color = "red";
                 logStat.innerHTML = "క్షమించండి! ఈ నంబర్ మా వద్ద లేదు.<br><br><span style='color:#004aad;'>పేమెంట్ పేజీ ఓపెన్ అవుతోంది... ⚡</span>";
                 
                 setTimeout(() => {
-                    let paymentPageUrl = "https://www.mylicprofile.com/p/payment-page.html?mob=" + input;
+                    // ⭐️ ఇక్కడ గిట్‌హబ్ పేమెంట్ లింక్ మార్చబడింది ⭐️
+                    let paymentPageUrl = "https://kagitha182710-art.github.io/lic-video-maker/payment.html?mob=" + input;
+                    
                     if (typeof window.AppInventor !== "undefined") {
                         window.AppInventor.setWebViewString("openbrowser|||" + paymentPageUrl);
                     } else {
                         window.location.href = paymentPageUrl;
                     }
-                }, 2500); // 2.5 సెకన్ల తర్వాత వెళ్తుంది
+                }, 2500); 
             }
         } catch (e) { logStat.innerText = "సర్వర్ సమస్య!"; }
     }
