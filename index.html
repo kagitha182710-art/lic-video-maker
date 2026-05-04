@@ -65,12 +65,15 @@
         #startBtn { background: #004aad; color: #fff; padding: 12px 20px; border:none; border-radius: 8px; font-weight:bold; cursor:pointer;}
         #stopBtn { background: #d93025; color: #fff; padding: 12px 20px; border:none; border-radius: 8px; font-weight:bold; cursor:pointer;}
         #downloadBtn { background: #1e8e3e; color: #fff; display: none; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight:bold;}
+        
+        .instruction-text { font-size: 12px; color: #d93025; margin-top: 12px; font-weight: 700; line-height: 1.4; background: #fce8e6; padding: 8px; border-radius: 6px; border: 1px dashed #d93025;}
     </style>
 </head>
 <body oncontextmenu="return false;">
 
 <div id="loginWrapper">
     <div class="premium-login-card">
+        
         <img src="https://i.ibb.co/0j0NQ09L/palleturi.png" class="logo" alt="My Logo">
 
         <h3><span>VIP</span> వీడియో మేకర్</h3>
@@ -100,6 +103,11 @@
         <button id="startBtn">▶ జనరేట్ </button>
         <button id="stopBtn" disabled>⏹ ఆపు</button>
     </div>
+    
+    <div class="instruction-text">
+        గమనిక: వీడియో రికార్డింగ్ పూర్తిగా అయిన తర్వాతే కింద డౌన్‌లోడ్ ఆప్షన్ కనబడుతుంది.
+    </div>
+    
     <div style="margin-top:15px;">
         <a id="downloadBtn" href="#">📥 వీడియో డౌన్‌లోడ్</a>
     </div>
@@ -114,6 +122,10 @@
     let borderSrc = "TRASPARENT BACKROUND.png", outroSrc = "";
     let lastUpdate = 0, nameX, nameY, mobX, mobY;
     let isOutro = false; 
+
+    // ⭐️ ఆడియో బగ్‌ను ఫిక్స్ చేయడానికి గ్లోబల్ వేరియబుల్స్ ⭐️
+    let audioCtx, dest, source;
+    let recorder, chunks = [];
 
     function formatDate(rawDate) {
         if(!rawDate || rawDate.trim() === "") return "Lifetime Free";
@@ -211,7 +223,7 @@
                 logStat.innerHTML = "క్షమించండి! ఈ నంబర్ మా వద్ద లేదు.<br><br><span style='color:#004aad;'>పేమెంట్ పేజీ ఓపెన్ అవుతోంది... ⚡</span>";
                 
                 setTimeout(() => {
-                    let paymentPageUrl = "https://mylicprofile.com/payment.html?mob=" + input; // ⭐️ చిన్న కరెక్షన్ చేశాను
+                    let paymentPageUrl = "https://mylicprofile.com/payment.html?mob=" + input;
                     if (typeof window.AppInventor !== "undefined") {
                         window.AppInventor.setWebViewString("openbrowser|||" + paymentPageUrl);
                     } else {
@@ -231,7 +243,6 @@
 
     function initVideo() {
         isOutro = false; 
-        // ⭐️ ఇక్కడ today.mp4 బదులు video1.mp4 పెట్టాను ⭐️
         v.src = "video1.mp4?v=" + Date.now();
         v.load();
     }
@@ -281,33 +292,60 @@
     function loop() { if (!v.paused && !v.ended) { render(); requestAnimationFrame(loop); } }
     v.addEventListener('play', loop);
 
+    // ⭐️ వీడియో మార్చినప్పుడు పాతవి క్లియర్ చేసే లాజిక్ ⭐️
     function changeVideo(src, btn) {
+        if (recorder && recorder.state !== "inactive") {
+            recorder.stop();
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+        }
+        
         document.querySelectorAll('.v-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         isOutro = false; 
+        
+        // డౌన్‌లోడ్ బటన్‌ని హైడ్ చేయడం
+        downloadBtn.style.display = "none";
+        
         v.src = src + "?v=" + Date.now();
         v.load();
     }
 
-    let recorder, chunks = [];
     startBtn.onclick = async () => {
         startBtn.disabled = true; stopBtn.disabled = false;
-        const audioCtx = new AudioContext(), dest = audioCtx.createMediaStreamDestination();
-        const source = audioCtx.createMediaElementSource(v);
-        source.connect(dest); source.connect(audioCtx.destination);
-        chunks = []; v.currentTime = 0; await v.play();
+        downloadBtn.style.display = "none"; // బటన్ హైడ్ అవుతుంది
+        
+        // ⭐️ ఆడియో బగ్ రాకుండా ఒకేసారి క్రియేట్ అయ్యే లాజిక్ ⭐️
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            dest = audioCtx.createMediaStreamDestination();
+            source = audioCtx.createMediaElementSource(v);
+            source.connect(dest); 
+            source.connect(audioCtx.destination);
+        }
+        if (audioCtx.state === 'suspended') {
+            await audioCtx.resume();
+        }
+
+        chunks = []; 
+        v.currentTime = 0; 
+        await v.play();
+        
         const stream = canvas.captureStream(30);
         const combined = new MediaStream([...stream.getVideoTracks(), ...dest.stream.getAudioTracks()]);
+        
         recorder = new MediaRecorder(combined, { mimeType: 'video/webm', videoBitsPerSecond: 2500000 });
         recorder.ondataavailable = e => chunks.push(e.data);
         recorder.onstop = () => {
             const blob = new Blob(chunks, { type: 'video/webm' });
             downloadBtn.href = URL.createObjectURL(blob);
             downloadBtn.download = "LIC_Video.webm";
+            // రికార్డింగ్ పూర్తయ్యాక మాత్రమే డౌన్‌లోడ్ బటన్ కనబడుతుంది
             downloadBtn.style.display = "inline-block";
         };
         recorder.start();
     };
+    
     stopBtn.onclick = () => { v.pause(); if(recorder && recorder.state !== "inactive") recorder.stop(); startBtn.disabled = false; stopBtn.disabled = true; };
     document.addEventListener('contextmenu', e => e.preventDefault());
 </script>
