@@ -8,7 +8,6 @@
     <style>
         body { font-family: 'Poppins', 'Anek Telugu', sans-serif; text-align: center; background: #eef2f7; padding: 10px; -webkit-user-select: none; user-select: none; margin: 0; }
         
-        /* ⭐️ 1. కొత్త ప్రీమియం లాగిన్ స్క్రీన్ డిజైన్ ⭐️ */
         #loginWrapper {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: linear-gradient(135deg, #001a33 0%, #004080 100%);
@@ -52,7 +51,6 @@
         }
         .premium-btn:active { transform: scale(0.95); box-shadow: 0 5px 10px rgba(255, 204, 0, 0.4); }
 
-        /* ⭐️ 2. వీడియో మేకర్ స్టైల్స్ (లోపల) ⭐️ */
         .container { max-width: 450px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); display: none; }
         .video-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px; max-height: 150px; overflow-y: auto; padding: 10px; border: 1px solid #ddd; border-radius: 10px; }
         .v-btn { padding: 10px 5px; font-size: 12px; background: #eef2f7; border: 1px solid #004aad; border-radius: 8px; cursor: pointer; font-weight: bold; color: #004aad; transition: 0.3s;}
@@ -73,12 +71,9 @@
 
 <div id="loginWrapper">
     <div class="premium-login-card">
-        
         <img src="https://i.ibb.co/0j0NQ09L/palleturi.png" class="logo" alt="My Logo">
-
         <h3><span>VIP</span> వీడియో మేకర్</h3>
         <p>మీ రిజిస్టర్డ్ మొబైల్ నంబర్ ఎంటర్ చేయండి</p>
-        
         <input type="tel" id="mobileInput" class="premium-input" placeholder="XXXXXXXXX" maxlength="10">
         <button id="loginBtn" class="premium-btn" onclick="checkUser()">లాగిన్ 🚀</button>
         <div id="loginStatus" style="margin-top:18px; font-size:14px; font-weight:bold;"></div>
@@ -123,7 +118,6 @@
     let lastUpdate = 0, nameX, nameY, mobX, mobY;
     let isOutro = false; 
 
-    // ⭐️ ఆడియో బగ్‌ను ఫిక్స్ చేయడానికి గ్లోబల్ వేరియబుల్స్ ⭐️
     let audioCtx, dest, source;
     let recorder, chunks = [];
 
@@ -138,7 +132,6 @@
 
     function isPlanExpired(rawDate) {
         if (!rawDate || rawDate.trim() === "" || rawDate.toLowerCase() === "lifetime free") return false;
-
         let parts = rawDate.split(/[-/ \T]/);
         if (parts.length >= 3) {
             let expiryDate;
@@ -187,9 +180,13 @@
                     let fSrc = cols[1]?.trim();
                     outroSrc = cols[2]?.trim();
                     
+                    // ⭐️ Images load avvagane render() call avvadaniki ⭐️
+                    borderImg.onload = () => render();
                     borderImg.src = borderSrc;
+                    
                     if (fSrc) {
                         fixedImg.crossOrigin = "anonymous";
+                        fixedImg.onload = () => render();
                         fixedImg.src = fSrc;
                     }
                     
@@ -202,14 +199,9 @@
                 if (planExpired) {
                     logStat.style.color = "red";
                     logStat.innerHTML = "మీ ప్లాన్ వాలిడిటీ ముగిసింది.<br><br><span style='color:#004aad;'>పేమెంట్ పేజీ ఓపెన్ అవుతోంది... ⚡</span>";
-                    
                     setTimeout(() => {
                         let paymentPageUrl = "https://mylicprofile.com/payment.html?mob=" + input;
-                        if (typeof window.AppInventor !== "undefined") {
-                            window.AppInventor.setWebViewString("openbrowser|||" + paymentPageUrl);
-                        } else {
-                            window.location.href = paymentPageUrl;
-                        }
+                        window.location.href = paymentPageUrl;
                     }, 2500);
                 } else {
                     document.getElementById('loginWrapper').style.display = "none";
@@ -221,14 +213,9 @@
             } else {
                 logStat.style.color = "red";
                 logStat.innerHTML = "క్షమించండి! ఈ నంబర్ మా వద్ద లేదు.<br><br><span style='color:#004aad;'>పేమెంట్ పేజీ ఓపెన్ అవుతోంది... ⚡</span>";
-                
                 setTimeout(() => {
                     let paymentPageUrl = "https://mylicprofile.com/payment.html?mob=" + input;
-                    if (typeof window.AppInventor !== "undefined") {
-                        window.AppInventor.setWebViewString("openbrowser|||" + paymentPageUrl);
-                    } else {
-                        window.location.href = paymentPageUrl;
-                    }
+                    window.location.href = paymentPageUrl;
                 }, 2500); 
             }
         } catch (e) { logStat.innerText = "సర్వర్ సమస్య!"; }
@@ -265,57 +252,68 @@
 
     function render() {
         let w = canvas.width, h = canvas.height;
+        if (w === 0 || h === 0) return; // Canvas ready avvakapothe aapesi wait chestundi
+        
         ctx.drawImage(v, 0, 0, w, h);
 
-        if (!v.paused && !v.ended) {
-            let now = Date.now();
-            if (now - lastUpdate > 4000) {
-                nameX = Math.random() * (w - 200) + 30; nameY = Math.random() * (h/2 - 100) + 100;
-                mobX = Math.random() * (w - 200) + 30; mobY = Math.random() * (h/2 - 100) + (h/2);
-                lastUpdate = now;
-            }
-            ctx.save(); ctx.globalAlpha = 0.5; ctx.shadowBlur = 4; ctx.shadowColor = "black";
-            ctx.font = "bold 24px Segoe UI"; ctx.fillStyle = "#FFD700";
-            ctx.fillText("👤", nameX - 30, nameY); ctx.fillStyle = "white"; ctx.fillText(waterName, nameX, nameY);
-            ctx.font = "bold 22px Segoe UI"; ctx.fillStyle = "#25D366";
-            ctx.fillText("📞", mobX - 30, mobY); ctx.fillStyle = "white"; ctx.fillText(agentMob, mobX, mobY);
-            ctx.restore();
+        let now = Date.now();
+        
+        // ⭐️ Video play avvakapoina kuda 1st time position set avuthundi ⭐️
+        if (!nameX || (!v.paused && !v.ended && now - lastUpdate > 4000)) {
+            nameX = Math.random() * (w - 200) + 30; 
+            nameY = Math.random() * (h/2 - 100) + 100;
+            mobX = Math.random() * (w - 200) + 30; 
+            mobY = Math.random() * (h/2 - 100) + (h/2);
+            lastUpdate = now;
         }
 
-        if (fixedImg.complete) {
+        // ⭐️ Details eppudu display avuthune untayi ⭐️
+        ctx.save(); 
+        ctx.globalAlpha = 0.5; 
+        ctx.shadowBlur = 4; 
+        ctx.shadowColor = "black";
+        ctx.font = "bold 24px Segoe UI"; 
+        ctx.fillStyle = "#FFD700";
+        ctx.fillText("👤", nameX - 30, nameY); 
+        ctx.fillStyle = "white"; 
+        ctx.fillText(waterName, nameX, nameY);
+        ctx.font = "bold 22px Segoe UI"; 
+        ctx.fillStyle = "#25D366";
+        ctx.fillText("📞", mobX - 30, mobY); 
+        ctx.fillStyle = "white"; 
+        ctx.fillText(agentMob, mobX, mobY);
+        ctx.restore();
+
+        if (fixedImg.complete && fixedImg.naturalWidth > 0) {
             let tw = w * 0.95, fh = ((fixedImg.height / fixedImg.width) * tw) * 0.85;
             ctx.drawImage(fixedImg, (w - tw) / 2, h - fh - 20, tw, fh);
         }
-        if (borderImg.complete) ctx.drawImage(borderImg, 0, 0, w, h);
+        if (borderImg.complete && borderImg.naturalWidth > 0) {
+            ctx.drawImage(borderImg, 0, 0, w, h);
+        }
     }
 
     function loop() { if (!v.paused && !v.ended) { render(); requestAnimationFrame(loop); } }
     v.addEventListener('play', loop);
 
-    // ⭐️ వీడియో మార్చినప్పుడు పాతవి క్లియర్ చేసే లాజిక్ ⭐️
     function changeVideo(src, btn) {
         if (recorder && recorder.state !== "inactive") {
             recorder.stop();
             startBtn.disabled = false;
             stopBtn.disabled = true;
         }
-        
         document.querySelectorAll('.v-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         isOutro = false; 
-        
-        // డౌన్‌లోడ్ బటన్‌ని హైడ్ చేయడం
         downloadBtn.style.display = "none";
-        
         v.src = src + "?v=" + Date.now();
         v.load();
     }
 
     startBtn.onclick = async () => {
         startBtn.disabled = true; stopBtn.disabled = false;
-        downloadBtn.style.display = "none"; // బటన్ హైడ్ అవుతుంది
+        downloadBtn.style.display = "none";
         
-        // ⭐️ ఆడియో బగ్ రాకుండా ఒకేసారి క్రియేట్ అయ్యే లాజిక్ ⭐️
         if (!audioCtx) {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             dest = audioCtx.createMediaStreamDestination();
@@ -340,7 +338,6 @@
             const blob = new Blob(chunks, { type: 'video/webm' });
             downloadBtn.href = URL.createObjectURL(blob);
             downloadBtn.download = "LIC_Video.webm";
-            // రికార్డింగ్ పూర్తయ్యాక మాత్రమే డౌన్‌లోడ్ బటన్ కనబడుతుంది
             downloadBtn.style.display = "inline-block";
         };
         recorder.start();
