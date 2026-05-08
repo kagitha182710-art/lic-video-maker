@@ -129,6 +129,7 @@
     let borderSrc = "TRASPARENT BACKROUND.png", outroSrc = "";
     let lastUpdate = 0, nameX, nameY, mobX, mobY;
     let isOutro = false; 
+    let profileReady = false; // ⭐️ కొత్త వేరియబుల్: ప్రొఫైల్ సెటప్ అయ్యిందో లేదో తెలుసుకోవడానికి ⭐️
 
     let audioCtx, dest, source;
     let recorder, chunks = [];
@@ -192,7 +193,13 @@
                     let fSrc = cols[1]?.trim();
                     outroSrc = cols[2]?.trim();
                     
-                    // ⭐️ Images load avvagane render() call avvadaniki ⭐️
+                    // ⭐️ ADDED: ఇమేజ్ లేదా క్లిప్ ఉందో లేదో చెక్ చేసే లాజిక్ ⭐️
+                    if (!fSrc && !outroSrc) {
+                        profileReady = false;
+                    } else {
+                        profileReady = true;
+                    }
+                    
                     borderImg.onload = () => render();
                     borderImg.src = borderSrc;
                     
@@ -264,13 +271,12 @@
 
     function render() {
         let w = canvas.width, h = canvas.height;
-        if (w === 0 || h === 0) return; // Canvas ready avvakapothe aapesi wait chestundi
+        if (w === 0 || h === 0) return; 
         
         ctx.drawImage(v, 0, 0, w, h);
 
         let now = Date.now();
         
-        // ⭐️ Video play avvakapoina kuda 1st time position set avuthundi ⭐️
         if (!nameX || (!v.paused && !v.ended && now - lastUpdate > 4000)) {
             nameX = Math.random() * (w - 200) + 30; 
             nameY = Math.random() * (h/2 - 100) + 100;
@@ -279,7 +285,6 @@
             lastUpdate = now;
         }
 
-        // ⭐️ Details eppudu display avuthune untayi ⭐️
         ctx.save(); 
         ctx.globalAlpha = 0.5; 
         ctx.shadowBlur = 4; 
@@ -323,6 +328,12 @@
     }
 
     startBtn.onclick = async () => {
+        // ⭐️ ADDED: షీట్‌లో డేటా లేకపోతే రికార్డింగ్ ఆపేసి మెసేజ్ చూపించే లాజిక్ ⭐️
+        if (!profileReady) {
+            alert("అడ్మిన్ మీ వీడియోస్ ని 24 గంటలలో అప్‌డేట్ చేస్తారు, దయచేసి వేచి ఉండండి.");
+            return;
+        }
+
         startBtn.disabled = true; stopBtn.disabled = false;
         downloadBtn.style.display = "none";
         
